@@ -1,10 +1,11 @@
 # BoxMaker: A free tool for creating boxes using tabbed construction
 
-_version 0.86d - 19 December 2014_
+_version 0.87 - 23 June 2015_
 
 Original box maker by Elliot White - http://www.keppel.demon.co.uk/111000/111000.html
 
 Updated Dec 2014 by Paul Hutchison - additional box options for 2,3,4,5 sides and internal dividers
+Updated June 2015 by Paul Hutchison - Inkscape 0.91 compatibility, more logical defaults
 
 ## About
  This tool is designed to simplify and speed up process of making practical boxes using a laser cutter (though it can be used with any CNC cutter) to prepare the pieces.
