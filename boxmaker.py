@@ -10,6 +10,9 @@ Modified by Paul Hutchison: 19/12/2014:
  - Ability to also generate evenly spaced dividers within the box
    including tabbed joints to box sides and slots to slot into each other
    
+Modified by Paul Hutchison: 23/06/2015:
+ - Updated for Inkscape's 0.91 breaking change (unittouu)
+   
 This program is ugly software: you can clean it up yourself and/or mock it 
 under the unpublished terms of common civility.
 
@@ -201,8 +204,8 @@ class BoxMaker(inkex.Effect):
     svg = self.document.getroot()
     
         # Get the attributes:
-    widthDoc  = inkex.unittouu(svg.get('width'))
-    heightDoc = inkex.unittouu(svg.get('height'))
+    widthDoc  = self.unittouu(svg.get('width'))
+    heightDoc = self.unittouu(svg.get('height'))
 
         # Create a new layer.
     layer = inkex.etree.SubElement(svg, 'g')
@@ -214,16 +217,16 @@ class BoxMaker(inkex.Effect):
         # Get script's option values.
     unit=self.options.unit
     inside=self.options.inside
-    X = inkex.unittouu( str(self.options.length)  + unit )
-    Y = inkex.unittouu( str(self.options.width) + unit )
-    Z = inkex.unittouu( str(self.options.height)  + unit )
-    thickness = inkex.unittouu( str(self.options.thickness)  + unit )
-    nomTab = inkex.unittouu( str(self.options.tab) + unit )
+    X = self.unittouu( str(self.options.length)  + unit )
+    Y = self.unittouu( str(self.options.width) + unit )
+    Z = self.unittouu( str(self.options.height)  + unit )
+    thickness = self.unittouu( str(self.options.thickness)  + unit )
+    nomTab = self.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
-    kerf = inkex.unittouu( str(self.options.kerf)  + unit )
-    clearance = inkex.unittouu( str(self.options.clearance)  + unit )
+    kerf = self.unittouu( str(self.options.kerf)  + unit )
+    clearance = self.unittouu( str(self.options.clearance)  + unit )
     layout=self.options.style
-    spacing = inkex.unittouu( str(self.options.spacing)  + unit )
+    spacing = self.unittouu( str(self.options.spacing)  + unit )
     boxtype = self.options.boxtype
     divx = self.options.div_l
     divy = self.options.div_w
