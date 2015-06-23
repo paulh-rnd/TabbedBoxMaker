@@ -18,10 +18,10 @@
     <_option value="0">Outside</_option>
   </param>
 
-  <param name="length" type="float" precision="3" min="0.0" max="10000.0" _gui-text="Length">10</param>
-  <param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Width">10</param>
-  <param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Height">5</param>
-  <param name="tab" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Minimum/Prefered Tab Width">1.0</param> 
+  <param name="length" type="float" precision="3" min="0.0" max="10000.0" _gui-text="Length">180</param>
+  <param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Width">240</param>
+  <param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Height">50</param>
+  <param name="tab" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Minimum/Prefered Tab Width">6.0</param> 
 
   <param name="equal" type="optiongroup" _gui-text="Tab Width">
     <_option value="0">Fixed</_option>
@@ -48,8 +48,8 @@
     <option value="6">Two panels only (LxW and LxH)</option>
   </param>
 
-  <param name="div_l" type="int" min="0" max="10" _gui-text="Dividers (Length axis)">0</param>
-  <param name="div_w" type="int" min="0" max="10" _gui-text="Dividers (Width axis)">0</param>
+  <param name="div_l" type="int" min="0" max="10" _gui-text="Dividers (Length axis)">2</param>
+  <param name="div_w" type="int" min="0" max="10" _gui-text="Dividers (Width axis)">3</param>
 
   <param name="spacing" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Space Between Parts">1.0</param> 
   
