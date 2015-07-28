@@ -6,6 +6,7 @@ Original box maker by Elliot White - http://www.keppel.demon.co.uk/111000/111000
 
 Updated Dec 2014 by Paul Hutchison - additional box options for 2,3,4,5 sides and internal dividers
 Updated June 2015 by Paul Hutchison - Inkscape 0.91 compatibility, more logical defaults
+Updated July 2015 by John Slee - Added Schroff enclosure generator option. Currently 3U rows only.
 
 ## About
  This tool is designed to simplify and speed up process of making practical boxes using a laser cutter (though it can be used with any CNC cutter) to prepare the pieces.
@@ -22,8 +23,11 @@ This version has been tried on windows XP, windows 7, Ubuntu and Mac OS X with n
 ## To do
 * Tidy the code - it is rough and unpythonic.  Needs some work by a master Python guru.
 * Improve program documentation. Improve input checking to restrict values to correct solutions.
+* [Schroff] Maybe replace the somewhat obscure collection of Schroff rail input data with a dropdown box listing well-documented rail types (Vector, Z-rails, whatever it is that Elby sells, others?)
+* [Schroff] Add support for multiple mounting holes per rail where possible (this would definitely make the previous todo item worthwhile)
+* [Schroff] Add support for 6U row height
 
-## Use
+## Use - regular tabbed boxes
  The interface is pretty self explanatory, the extension is 'Tabbed Box Maker' in the 'Laser Tools' group ( hopefully more tools will soon{ish} join it ).
 
 In order of appearance:
@@ -75,8 +79,20 @@ In order of appearance:
 				
 * Space Between Parts - how far apart the pieces are in the drawing produced
 
+## Use - Schroff enclosures
+
+Much the same as for regular enclosures, except some options are removed, and some others are added. If you're using Elby rails, all you'll need to do is specify:
+
+* Depth
+
+* Number of 3U rows
+
+* Row width in TE/HP units (divide rail length by 5.08mm/0.2")
+
+* If multiple rows, inter-row spacing
+
 ## Installation
-Boxmaker.inx and Boxmaker.py need to be put in the inkscape extensions folder  generally in: 
+Boxmaker.inx, Schroffmaker.inx and Boxmaker.py need to be put in the inkscape extensions folder  generally in: 
 
    `...\Inkscape\share\extensions `
 
