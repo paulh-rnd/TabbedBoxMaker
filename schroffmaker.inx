@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <_name>Schroff Box Maker</_name>
+  <id>eu.twot.render.schroffboxmaker</id>
+
+  <dependency type="executable" location="extensions">boxmaker.py</dependency>
+  <dependency type="executable" location="extensions">simpletransform.py</dependency>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+
+  <param name="unit" type="string" gui-hidden="true">mm</param>
+  <param name="inside" type="string" gui-hidden="true">1</param>
+  <param name="schroff" type="int" gui-hidden="true">1</param>
+  <param name="rows" type="int" min="1" max="6" _gui-text="Number of 3U rows:">1</param>
+  <param name="hp" type="int" min="4" max="168" _gui-text="Width (TE/HP units):">84</param>
+  <param name="length" type="float" precision="3" gui-hidden="true">0.0</param>
+  <param name="width" type="float" precision="3" gui-hidden="true">0.0</param>
+  <param name="depth" type="float" precision="3" min="30" max="300" _gui-text="Depth:">65</param>
+
+  <!-- these defaults are suitable for the rails sold by Elby Designs -->
+  <param name="rail_height" type="float" precision="3" min="7.0" max="10.0" _gui-text="Rail height:">10.0</param>
+  <param name="rail_mount_depth" type="float" precision="3" min="5" max="30" _gui-text="Rail mounting hole depth:">17.4</param>
+  <param name="rail_mount_centre_offset" type="float" precision="3" min="0.0" max="5.0" _gui-text="Rail mount hole centre-offset:">0.0</param>
+  <param name="row_spacing" type="float" precision="3" min="0.0" max="50.0" _gui-text="Spacing between rows:">0.0</param>
+
+  <param name="tab" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Minimum/Prefered Tab Width">6.0</param> 
+  <param name="equal" type="optiongroup" _gui-text="Tab Width">
+    <_option value="0">Fixed</_option>
+    <_option value="1">Proportional</_option>
+  </param>
+
+  <param name="thickness" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Material Thickness">3.0</param>
+  <param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Kerf (cut width)">0.1</param>
+  <param name="clearance" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Joint clearance">0.01</param>
+  <param name="div_l" type="int" gui-hidden="true">0</param>
+  <param name="div_w" type="int" gui-hidden="true">0</param>
+	
+  <param name="style" type="string" gui-hidden="true">1</param>
+  <param name="boxtype" type="int" gui-hidden="true">2</param>
+
+  <param name="spacing" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Space Between Parts">1.0</param> 
+  
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+      <submenu _name="Laser Tools" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">boxmaker.py</command>
+  </script>
+</inkscape-extension>
