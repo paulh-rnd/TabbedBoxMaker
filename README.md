@@ -1,6 +1,6 @@
 # BoxMaker: A free tool for creating boxes using tabbed construction
 
-_version 0.93 - 23 June 2015_
+_version 0.93 - 21 Sept 2015_
 
 Original box maker by Elliot White - http://www.twot.eu/111000/111000.html
 
