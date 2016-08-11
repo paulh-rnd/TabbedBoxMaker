@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 __version__ = "0.86" ### please report bugs, suggestions etc to bugs@twot.eu ###
 
-import sys,inkex,simplestyle,gettext,math
+import os,sys,inkex,simplestyle,gettext,math
 _ = gettext.gettext
 
 def log(text):
