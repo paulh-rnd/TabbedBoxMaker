@@ -35,9 +35,10 @@ import sys,inkex,simplestyle,gettext,math
 _ = gettext.gettext
 
 def log(text):
-  if 1:
-    f = open('/tmp/boxmaker.log', 'a')
+  if 'SCHROFF_LOG' in os.environ:
+    f = open(os.environ.get('SCHROFF_LOG'), 'a')
     f.write(text + "\n")
+
 
 def drawS(XYstring):         # Draw lines from a list
   name='part'
