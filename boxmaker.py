@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python -t
 '''
 Generates Inkscape SVG file containing box components needed to 
 laser cut a tabbed construction box taking kerf and clearance into account
@@ -31,8 +31,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 __version__ = "0.86" ### please report bugs, suggestions etc to bugs@twot.eu ###
 
-import sys,inkex,simplestyle,gettext
+import sys,inkex,simplestyle,gettext,math
 _ = gettext.gettext
+
+def log(text):
+  if 1:
+    f = open('/tmp/boxmaker.log', 'a')
+    f.write(text + "\n")
 
 def drawS(XYstring):         # Draw lines from a list
   name='part'
@@ -40,6 +45,23 @@ def drawS(XYstring):         # Draw lines from a list
   drw = {'style':simplestyle.formatStyle(style),inkex.addNS('label','inkscape'):name,'d':XYstring}
   inkex.etree.SubElement(parent, inkex.addNS('path','svg'), drw )
   return
+
+# jslee - shamelessly adapted from sample code on below Inkscape wiki page 2015-07-28
+# http://wiki.inkscape.org/wiki/index.php/Generating_objects_from_extensions
+def drawCircle(r, (cx, cy)):
+    log("putting circle at (%d,%d)" % (cx,cy))
+    style = { 'stroke': '#000000', 'stroke-width': '1', 'fill': 'none' }
+    ell_attribs = {'style':simplestyle.formatStyle(style),
+        inkex.addNS('cx','sodipodi')        :str(cx),
+        inkex.addNS('cy','sodipodi')        :str(cy),
+        inkex.addNS('rx','sodipodi')        :str(r),
+        inkex.addNS('ry','sodipodi')        :str(r),
+        inkex.addNS('start','sodipodi')     :str(0),
+        inkex.addNS('end','sodipodi')       :str(2*math.pi),
+        inkex.addNS('open','sodipodi')      :'true', #all ellipse sectors we will draw are open
+        inkex.addNS('type','sodipodi')      :'arc',
+        'transform'                         :'' }
+    inkex.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
 
 def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,numDividers,divSpacing):
   #       root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing
@@ -166,6 +188,20 @@ class BoxMaker(inkex.Effect):
       # Call the base class constructor.
       inkex.Effect.__init__(self)
       # Define options
+      self.OptionParser.add_option('--schroff',action='store',type='int',
+        dest='schroff',default=0,help='Enable Schroff mode')
+      self.OptionParser.add_option('--rail_height',action='store',type='float',
+        dest='rail_height',default=10.0,help='Height of rail')
+      self.OptionParser.add_option('--rail_mount_depth',action='store',type='float',
+        dest='rail_mount_depth',default=17.4,help='Depth at which to place hole for rail mount bolt')
+      self.OptionParser.add_option('--rail_mount_centre_offset',action='store',type='float',
+        dest='rail_mount_centre_offset',default=0.0,help='How far toward row centreline to offset rail mount bolt (from rail centreline)')
+      self.OptionParser.add_option('--rows',action='store',type='int',
+        dest='rows',default=0,help='Number of Schroff rows')
+      self.OptionParser.add_option('--hp',action='store',type='int',
+        dest='hp',default=0,help='Width (TE/HP units) of Schroff rows')
+      self.OptionParser.add_option('--row_spacing',action='store',type='float',
+        dest='row_spacing',default=10.0,help='Height of rail')
       self.OptionParser.add_option('--unit',action='store',type='string',
         dest='unit',default='mm',help='Measure Units')
       self.OptionParser.add_option('--inside',action='store',type='int',
@@ -214,11 +250,36 @@ class BoxMaker(inkex.Effect):
     
     parent=self.current_layer
     
-        # Get script's option values.
+    # Get script's option values.
     unit=self.options.unit
     inside=self.options.inside
-    X = self.unittouu( str(self.options.length)  + unit )
-    Y = self.unittouu( str(self.options.width) + unit )
+    schroff=self.options.schroff
+    if schroff:
+        hp=self.options.hp
+        rows=self.options.rows
+        rail_height=self.unittouu(str(self.options.rail_height)+unit)
+        row_centre_spacing=self.unittouu(str(122.5)+unit)
+        row_spacing=self.unittouu(str(self.options.row_spacing)+unit)
+        rail_mount_depth=self.unittouu(str(self.options.rail_mount_depth)+unit)
+        rail_mount_centre_offset=self.unittouu(str(self.options.rail_mount_centre_offset)+unit)
+        rail_mount_radius=self.unittouu(str(2.5)+unit)
+    
+    ## minimally different behaviour for schroffmaker.inx vs. boxmaker.inx
+    ## essentially schroffmaker.inx is just an alternate interface with different
+    ## default settings, some options removed, and a tiny amount of extra logic
+    if schroff:
+        ## schroffmaker.inx
+        X = self.unittouu(str(self.options.hp * 5.08) + unit)
+        # 122.5mm vertical distance between mounting hole centres of 3U Schroff panels
+        row_height = rows * (row_centre_spacing + rail_height)
+        # rail spacing in between rows but never between rows and case panels
+        row_spacing_total = (rows - 1) * row_spacing
+        Y = row_height + row_spacing_total
+    else:
+        ## boxmaker.inx
+        X = self.unittouu( str(self.options.length)  + unit )
+        Y = self.unittouu( str(self.options.width) + unit )
+
     Z = self.unittouu( str(self.options.height)  + unit )
     thickness = self.unittouu( str(self.options.thickness)  + unit )
     nomTab = self.unittouu( str(self.options.tab) + unit )
@@ -362,6 +423,38 @@ class BoxMaker(inkex.Effect):
       yspacing=(Y-thickness)/(divx+1)
       xholes = 1 if piece[6]<3 else 0
       yholes = 1 if piece[6]!=2 else 0
+      railholes = 1 if piece[6]==3 else 0
+
+      if schroff and railholes:
+        log("rail holes enabled on piece %d at (%d, %d)" % (idx, x+thickness,y+thickness))
+        log("abcd = (%d,%d,%d,%d)" % (a,b,c,d))
+        log("dxdy = (%d,%d)" % (dx,dy))
+        rhxoffset = rail_mount_depth + thickness
+        if idx == 1:
+          rhx=x+rhxoffset
+        elif idx == 3:
+          rhx=x-rhxoffset+dx
+        else:
+          rhx=0
+        log("rhxoffset = %d, rhx= %d" % (rhxoffset, rhx))
+        rystart=y+(rail_height/2)+thickness
+        if rows == 1:
+          log("just one row this time, rystart = %d" % rystart)
+          rh1y=rystart+rail_mount_centre_offset
+          rh2y=rh1y+(row_centre_spacing-rail_mount_centre_offset)
+          drawCircle(rail_mount_radius,(rhx,rh1y))
+          drawCircle(rail_mount_radius,(rhx,rh2y))
+        else:
+          for n in range(0,rows):
+            log("drawing row %d, rystart = %d" % (n+1, rystart))
+            # if holes are offset (eg. Vector T-strut rails), they should be offset
+            # toward each other, ie. toward the centreline of the Schroff row
+            rh1y=rystart+rail_mount_centre_offset
+            rh2y=rh1y+row_centre_spacing-rail_mount_centre_offset
+            drawCircle(rail_mount_radius,(rhx,rh1y))
+            drawCircle(rail_mount_radius,(rhx,rh2y))
+            rystart+=row_centre_spacing+row_spacing+rail_height
+
       # generate and draw the sides of each piece
       drawS(side((x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,0,divx*yholes*atabs,yspacing))          # side a
       drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,divy*xholes*btabs,xspacing))     # side b
@@ -390,6 +483,7 @@ class BoxMaker(inkex.Effect):
           drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,1,0,0))     # side b
           drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,1,0,0)) # side c
           drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,1,0,0))      # side d
+
 # Create effect instance and apply it.
 effect = BoxMaker()
 effect.affect()
