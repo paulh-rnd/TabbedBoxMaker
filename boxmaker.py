@@ -266,7 +266,7 @@ class BoxMaker(inkex.Effect):
 
     # Set the line thickness
     if hairline:
-        linethickness=self.unittouu('0.001in')
+        linethickness=self.unittouu('0.002in')
     else:
         linethickness=1
         
