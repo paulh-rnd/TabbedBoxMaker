@@ -28,6 +28,11 @@
     <_option value="1">Proportional</_option>
   </param>
 
+  <param name="hairline" type="optiongroup" _gui-text="Line Thickness" appearance="minimal">
+    <_option value="0">Default</_option>
+    <_option value="1">Hairline (0.001" for Epilog)</_option>
+  </param>
+
   <param name="thickness" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Material Thickness">3.0</param>
   <param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Kerf (cut width)">0.1</param>
   <param name="clearance" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Joint clearance">0.01</param>
