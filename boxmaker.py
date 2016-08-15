@@ -12,6 +12,9 @@ Modified by Paul Hutchison: 19/12/2014:
    
 Modified by Paul Hutchison: 23/06/2015:
  - Updated for Inkscape's 0.91 breaking change (unittouu)
+ 
+Modified by Paul Hutchison: 15/8/2016:
+ - Added Hairline option and fixed open box height bug
    
 This program is ugly software: you can clean it up yourself and/or mock it 
 under the unpublished terms of common civility.
@@ -29,10 +32,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-__version__ = "0.86" ### please report bugs, suggestions etc to bugs@twot.eu ###
+__version__ = "0.93" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
 import os,sys,inkex,simplestyle,gettext,math
 _ = gettext.gettext
+
+linethickness = 1 # default unless overridden by settings
 
 def log(text):
   if 'SCHROFF_LOG' in os.environ:
@@ -42,7 +47,7 @@ def log(text):
 
 def drawS(XYstring):         # Draw lines from a list
   name='part'
-  style = { 'stroke': '#000000', 'fill': 'none' }
+  style = { 'stroke': '#000000', 'stroke-width'  : str(linethickness), 'fill': 'none' }
   drw = {'style':simplestyle.formatStyle(style),inkex.addNS('label','inkscape'):name,'d':XYstring}
   inkex.etree.SubElement(parent, inkex.addNS('path','svg'), drw )
   return
@@ -51,7 +56,7 @@ def drawS(XYstring):         # Draw lines from a list
 # http://wiki.inkscape.org/wiki/index.php/Generating_objects_from_extensions
 def drawCircle(r, (cx, cy)):
     log("putting circle at (%d,%d)" % (cx,cy))
-    style = { 'stroke': '#000000', 'stroke-width': '1', 'fill': 'none' }
+    style = { 'stroke': '#000000', 'stroke-width': str(linethickness), 'fill': 'none' }
     ell_attribs = {'style':simplestyle.formatStyle(style),
         inkex.addNS('cx','sodipodi')        :str(cx),
         inkex.addNS('cy','sodipodi')        :str(cy),
@@ -217,6 +222,8 @@ class BoxMaker(inkex.Effect):
         dest='tab',default=25,help='Nominal Tab Width')
       self.OptionParser.add_option('--equal',action='store',type='int',
         dest='equal',default=0,help='Equal/Prop Tabs')
+      self.OptionParser.add_option('--hairline',action='store',type='int',
+        dest='hairline',default=0,help='Line Thickness')
       self.OptionParser.add_option('--thickness',action='store',type='float',
         dest='thickness',default=10,help='Thickness of Material')
       self.OptionParser.add_option('--kerf',action='store',type='float',
@@ -235,7 +242,7 @@ class BoxMaker(inkex.Effect):
         dest='div_w',default=25,help='Dividers (Width axis)')
 
   def effect(self):
-    global parent,nomTab,equalTabs,thickness,correction,divx,divy
+    global parent,nomTab,equalTabs,thickness,correction,divx,divy,hairline,linethickness
     
         # Get access to main SVG document element and get its dimensions.
     svg = self.document.getroot()
@@ -252,9 +259,17 @@ class BoxMaker(inkex.Effect):
     parent=self.current_layer
     
     # Get script's option values.
+    hairline=self.options.hairline
     unit=self.options.unit
     inside=self.options.inside
     schroff=self.options.schroff
+
+    # Set the line thickness
+    if hairline:
+        linethickness=self.unittouu('0.001in')
+    else:
+        linethickness=1
+        
     if schroff:
         hp=self.options.hp
         rows=self.options.rows
@@ -344,54 +359,54 @@ class BoxMaker(inkex.Effect):
     # note first two pieces in each set are the X-divider template and Y-divider template respectively
     if boxtype==2: # One side open (X,Y)
       if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1000,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1110,0b1110,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1011,0b1011,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b0010,0b0111,2]]
+        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1110,3],
+                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1011,3],
+                [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2]]
       elif layout==2: # 3 Piece Layout
-        pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1000,0b1101,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1110,0b1110,3],
+        pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1101,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1110,3],
                 [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1111,1]]
       elif layout==3: # Inline(compact) Layout
-        pieces=[[(5,2,0,2),(1,0,0,0),X,Z,0b1101,0b1101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0100,0b1110,3],
-                [(4,2,0,1),(1,0,0,0),Z,Y,0b0001,0b1011,3],[(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1],
-                [(6,3,0,2),(1,0,0,0),X,Z,0b0111,0b0111,2]]
+        pieces=[[(5,2,0,2),(1,0,0,0),X,Z,0b1111,0b1101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0101,0b1110,3],
+                [(4,2,0,1),(1,0,0,0),Z,Y,0b0101,0b1011,3],[(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1],
+                [(6,3,0,2),(1,0,0,0),X,Z,0b1111,0b0111,2]]
       elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
         pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1001,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1110,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0010,0b1011,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0110,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b0100,0b0111,2]]
+                [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1011,3],
+                [(4,1,0,2),(2,0,0,1),X,Y,0b0110,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b0111,2]]
     elif boxtype==3: # Two sides open (X,Y and X,Z)
       if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b0010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1100,3],                
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1001,0b1001,3]]
+        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],                
+                [(2,0,0,1),(2,0,0,1),X,Y,0b0010,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1001,3]]
       elif layout==2: # 3 Piece Layout
-        pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1000,0b1101,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1100,0b1100,3],
-                [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1101,1]]
+        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],
+                [(2,0,0,1),(2,0,0,1),X,Y,0b0010,0b1101,1]]
       elif layout==3: # Inline(compact) Layout
-        pieces=[[(6,3,0,2),(1,0,0,0),X,Z,0b0111,0b0111,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0100,0b1100,3],
-                [(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1101,1],[(4,2,0,1),(1,0,0,0),Z,Y,0b0100,0b1001,3]]
+        pieces=[[(2,2,0,2),(1,0,0,0),X,Z,0b1010,0b0111,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1111,0b1100,3],
+                [(2,1,0,0),(1,0,0,0),X,Y,0b0010,0b1101,1],[(4,2,0,1),(1,0,0,0),Z,Y,0b1111,0b1001,3]]
       elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b0100,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1100,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0000,0b1001,3]]
+        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],
+                [(2,0,0,1),(2,0,0,1),X,Y,0b1110,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1001,3]]
     elif boxtype==4: # Three sides open (X,Y, X,Z and Z,Y)
       if layout==2: # 3 Piece Layout
-        pieces=[[(2,2,0,0),(2,0,1,0),X,Z,0b1000,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b0110,0b0110,3],
-                [(2,2,0,0),(1,0,0,0),X,Y,0b0000,0b0011,1]]
+        pieces=[[(2,2,0,0),(2,0,1,0),X,Z,0b1111,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b0110,3],
+                [(2,2,0,0),(1,0,0,0),X,Y,0b1100,0b0011,1]]
       else:
-        pieces=[[(3,3,0,0),(1,0,0,0),X,Z,0b1000,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b0110,0b0110,3],
-                [(2,2,0,0),(1,0,0,0),X,Y,0b0000,0b0011,1]]
+        pieces=[[(3,3,0,0),(1,0,0,0),X,Z,0b1110,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b0110,3],
+                [(2,2,0,0),(1,0,0,0),X,Y,0b1100,0b0011,1]]
     elif boxtype==5: # Opposite ends open (X,Y)
       if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b0000,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b1010,0b1010,3],
-                [(2,0,0,1),(1,0,0,0),X,Z,0b0000,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1010,0b1010,3]]
+        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1010,3],
+                [(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1010,3]]
       elif layout==2: # 2 Piece Layout
-        pieces=[[(1,0,0,1),(1,0,1,1),X,Z,0b0000,0b0101,2],[(2,1,0,1),(1,0,0,1),Z,Y,0b1010,0b1010,3]]
+        pieces=[[(1,0,0,1),(1,0,1,1),X,Z,0b1010,0b0101,2],[(2,1,0,1),(1,0,0,1),Z,Y,0b1111,0b1010,3]]
       elif layout==3: # Inline(compact) Layout
-        pieces=[[(1,0,0,0),(1,0,0,0),X,Z,0b0000,0b0101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1010,0b1010,3],
-                [(2,1,0,0),(1,0,0,0),X,Z,0b0000,0b0101,2],[(4,2,0,1),(2,0,0,0),Z,Y,0b1010,0b1010,3]]
+        pieces=[[(1,0,0,0),(1,0,0,0),X,Z,0b1010,0b0101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1111,0b1010,3],
+                [(2,1,0,0),(1,0,0,0),X,Z,0b1010,0b0101,2],[(4,2,0,1),(2,0,0,0),Z,Y,0b1111,0b1010,3]]
       elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b0001,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b0010,0b1010,3],
-                [(2,0,0,1),(1,0,0,0),X,Z,0b0100,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1000,0b1010,3]]
+        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1011,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b0111,0b1010,3],
+                [(2,0,0,1),(1,0,0,0),X,Z,0b1110,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1101,0b1010,3]]
     elif boxtype==6: # 2 panels jointed (X,Y and Z,Y joined along Y)
-      pieces=[[(1,0,0,0),(1,0,0,0),X,Y,0b0000,0b0100,1],[(2,1,0,0),(1,0,0,0),Z,Y,0b0001,0b0001,3]]
+      pieces=[[(1,0,0,0),(1,0,0,0),X,Y,0b1011,0b0100,1],[(2,1,0,0),(1,0,0,0),Z,Y,0b1111,0b0001,3]]
     else: # Fully enclosed
       if   layout==1: # Diagramatic Layout
         pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1111,3],
