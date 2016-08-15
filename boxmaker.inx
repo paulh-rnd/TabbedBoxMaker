@@ -30,7 +30,7 @@
 
   <param name="hairline" type="optiongroup" _gui-text="Line Thickness" appearance="minimal">
     <_option value="0">Default</_option>
-    <_option value="1">Hairline (0.001" for Epilog)</_option>
+    <_option value="1">Hairline (0.002" for Epilog)</_option>
   </param>
 
   <param name="thickness" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Material Thickness">3.0</param>
