@@ -12,6 +12,8 @@ Updated July 2015 by John Slee - Added Schroff enclosure generator option. Curre
 
 Updated Sept 2015 by Paul Hutchison - Elliot White got in touch to provide updated contact details
 
+Updated Aug 2016 by Paul Hutchison - Added Epilog line settings, fixed several minor sizing bugs with box matrices.
+
 ## About
  This tool is designed to simplify and speed up process of making practical boxes using a laser cutter (though it can be used with any CNC cutter) to prepare the pieces.
 
