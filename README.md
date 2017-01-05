@@ -1,6 +1,6 @@
 # BoxMaker: A free tool for creating boxes using tabbed construction
 
-_version 0.93 - 21 Sept 2015_
+_version 0.94 - 5 Jan 2017_
 
 Original box maker by Elliot White - http://www.twot.eu/111000/111000.html
 
@@ -12,7 +12,10 @@ Updated July 2015 by John Slee - Added Schroff enclosure generator option. Curre
 
 Updated Sept 2015 by Paul Hutchison - Elliot White got in touch to provide updated contact details
 
-Updated Aug 2016 by Paul Hutchison - Added Epilog line settings, fixed several minor sizing bugs with box matrices.
+v0.93 - 15/8/2016 by Paul Hutchison - Added Hairline option and fixed open box height bug
+ 
+v0.94 - 05/01/2017 by Paul Hutchison - Added option for keying dividers into walls/floor/none
+
 
 ## About
  This tool is designed to simplify and speed up process of making practical boxes using a laser cutter (though it can be used with any CNC cutter) to prepare the pieces.
@@ -82,6 +85,12 @@ In order of appearance:
 * Dividers (Width axis) - use this to create additional WxH panels that mount inside the box 
 						 along the width axis and have finger joints into the side panels
 						 and slots for Length dividers to slot into
+						 
+* Key the dividers into - this allows you to choose if/how the dividers are keyed into the sides of the box. Options are:
+	* None - no keying, dividers will be free to slide in and out
+	* Walls - dividers will only be keyed into the side walls of the box
+	* Floor/Ceiling - dividers will only be keyed into the top/bottom of the box
+	* All Sides
 				
 * Space Between Parts - how far apart the pieces are in the drawing produced
 
