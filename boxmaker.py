@@ -5,16 +5,20 @@ laser cut a tabbed construction box taking kerf and clearance into account
 
 Copyright (C) 2011 elliot white
 
-Modified by Paul Hutchison: 19/12/2014:
+Changelog:
+19/12/2014 Paul Hutchison:
  - Ability to generate 6, 5, 4, 3 or 2-panel cutouts
  - Ability to also generate evenly spaced dividers within the box
    including tabbed joints to box sides and slots to slot into each other
    
-Modified by Paul Hutchison: 23/06/2015:
+23/06/2015 by Paul Hutchison:
  - Updated for Inkscape's 0.91 breaking change (unittouu)
  
-Modified by Paul Hutchison: 15/8/2016:
+v0.93 - 15/8/2016 by Paul Hutchison:
  - Added Hairline option and fixed open box height bug
+ 
+v0.94 - 05/01/2017 by Paul Hutchison:
+ - Added option for keying dividers into walls/floor/none
    
 This program is ugly software: you can clean it up yourself and/or mock it 
 under the unpublished terms of common civility.
@@ -32,7 +36,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-__version__ = "0.93" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
+__version__ = "0.94" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
 import os,sys,inkex,simplestyle,gettext,math
 _ = gettext.gettext
@@ -69,8 +73,8 @@ def drawCircle(r, (cx, cy)):
         'transform'                         :'' }
     inkex.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
 
-def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,numDividers,divSpacing):
-  #       root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing
+def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,numDividers,divSpacing,divOffset):
+  #       root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing dividerOffset
 
   divs=int(length/nomTab)  # divisions
   if not divs%2: divs-=1   # make divs odd
@@ -134,8 +138,8 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
     if n%2:
       if n==1 and numDividers>0 and isDivider: # draw slots for dividers to slot into each other
         for m in range(1,int(numDividers)+1):
-          Dx=Vx+-diry*(divSpacing*m+thickness)
-          Dy=Vy+dirx*(divSpacing*m-thickness)
+          Dx=Vx+-diry*(divSpacing*m+divOffset)
+          Dy=Vy+dirx*(divSpacing*m-divOffset)
           h='M '+str(Dx)+','+str(Dy)+' '
           Dx=Dx+dirx*(first+length/2)
           Dy=Dy+diry*(first+length/2)
@@ -240,9 +244,11 @@ class BoxMaker(inkex.Effect):
         dest='div_l',default=25,help='Dividers (Length axis)')
       self.OptionParser.add_option('--div_w',action='store',type='int',
         dest='div_w',default=25,help='Dividers (Width axis)')
+      self.OptionParser.add_option('--keydiv',action='store',type='int',
+        dest='keydiv',default=3,help='Key dividers into walls/floor')
 
   def effect(self):
-    global parent,nomTab,equalTabs,thickness,correction,divx,divy,hairline,linethickness
+    global parent,nomTab,equalTabs,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
     
         # Get access to main SVG document element and get its dimensions.
     svg = self.document.getroot()
@@ -307,6 +313,9 @@ class BoxMaker(inkex.Effect):
     boxtype = self.options.boxtype
     divx = self.options.div_l
     divy = self.options.div_w
+    keydivwalls = 0 if self.options.keydiv == 3 or self.options.keydiv == 1 else 1
+    keydivfloor = 0 if self.options.keydiv == 3 or self.options.keydiv == 2 else 1
+    divOffset = keydivwalls*thickness
         
     if inside: # if inside dimension selected correct values to outside dimension
       X+=thickness*2
@@ -439,6 +448,8 @@ class BoxMaker(inkex.Effect):
       yspacing=(Y-thickness)/(divx+1)
       xholes = 1 if piece[6]<3 else 0
       yholes = 1 if piece[6]!=2 else 0
+      wall = 1 if piece[6]>1 else 0
+      floor = 1 if piece[6]==1 else 0
       railholes = 1 if piece[6]==3 else 0
 
       if schroff and railholes:
@@ -472,33 +483,42 @@ class BoxMaker(inkex.Effect):
             rystart+=row_centre_spacing+row_spacing+rail_height
 
       # generate and draw the sides of each piece
-      drawS(side((x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,0,divx*yholes*atabs,yspacing))          # side a
-      drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,divy*xholes*btabs,xspacing))     # side b
+      drawS(side((x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*atabs,yspacing,divOffset))          # side a
+      drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*btabs,xspacing,divOffset))     # side b
       if atabs:
-        drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0)) # side c
+        drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0,divOffset)) # side c
       else:
-        drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,divx*yholes*ctabs,yspacing)) # side c
+        drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*ctabs,yspacing,divOffset)) # side c
       if btabs:
-        drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0))      # side d
+        drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0,divOffset))      # side d
       else:
-        drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,divy*xholes*dtabs,xspacing))      # side d
+        drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing,divOffset))      # side d
 
       if idx==0:
+        if not keydivwalls:
+          a=1;
+          b=1;
+          c=1;
+          d=1;
+          atabs=0;
+          btabs=0;
+          ctabs=0;
+          dtabs=0;
         y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
         for n in range(0,divx): # generate X dividers
           x=n*(spacing+X)  # root x co-ord for piece      
-          drawS(side((x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,1,0,0))          # side a
-          drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing))     # side b
-          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,1,0,0)) # side c
-          drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,1,0,0))      # side d
+          drawS(side((x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0,divOffset))          # side a
+          drawS(side((x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if keydivwalls*b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing,divOffset))     # side b
+          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,divOffset)) # side c
+          drawS(side((x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,divOffset))      # side d
       elif idx==1:
         y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
         for n in range(0,divy): # generate Y dividers 
-          x=n*(spacing+Z)  # root x co-ord for piece      
-          drawS(side((x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,1,divx*yholes,yspacing))          # side a
-          drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,1,0,0))     # side b
-          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,1,0,0)) # side c
-          drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,1,0,0))      # side d
+          x=n*(spacing+Z)  # root x co-ord for piece
+          drawS(side((x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,divx*yholes,yspacing,thickness))          # side a
+          drawS(side((x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0,thickness))     # side b
+          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,thickness)) # side c
+          drawS(side((x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,thickness))      # side d
 
 # Create effect instance and apply it.
 effect = BoxMaker()
