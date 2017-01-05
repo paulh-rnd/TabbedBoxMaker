@@ -3,19 +3,7 @@
 _version 0.94 - 5 Jan 2017_
 
 Original box maker by Elliot White - http://www.twot.eu/111000/111000.html
-
-Updated Dec 2014 by Paul Hutchison - additional box options for 2,3,4,5 sides and internal dividers
-
-Updated June 2015 by Paul Hutchison - Inkscape 0.91 compatibility, more logical defaults
-
-Updated July 2015 by John Slee - Added Schroff enclosure generator option. Currently 3U rows only.
-
-Updated Sept 2015 by Paul Hutchison - Elliot White got in touch to provide updated contact details
-
-v0.93 - 15/8/2016 by Paul Hutchison - Added Hairline option and fixed open box height bug
- 
-v0.94 - 05/01/2017 by Paul Hutchison - Added option for keying dividers into walls/floor/none
-
+Heavily modified by Paul Hutchison
 
 ## About
  This tool is designed to simplify and speed up process of making practical boxes using a laser cutter (though it can be used with any CNC cutter) to prepare the pieces.
@@ -127,3 +115,5 @@ version | Date | Notes
 0.86a | (23 June 2015) | Updated for compatibility with Inkscape 0.91
 0.87 | (28 July 2015) | Schroff enclosure add-on
 0.93 | (21 Sept 2015) | Updated versioning to match original author's updated v0.91 plus adding my 0.02 
+0.93a | (21 Sept 2015) | Added hairline line thickness option for Epilog lasers
+0.94 | (4 Jan 2017) | Divider keying options
