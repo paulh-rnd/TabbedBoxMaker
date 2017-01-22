@@ -16,6 +16,10 @@ Heavily modified by Paul Hutchison
 This version has been tried on windows XP, windows 7, Ubuntu and Mac OS X with no serious problems ( the live preview works most of the time but can be flaky).
 
  Only crude input checking has been implemented in the program but as the only output is a drawing the worst that can happen is a messed up picture ( control-Z cures that problem ).
+ 
+## Donate
+ Any donations will be gratefully received and help me spend more time on laser cutter tools like this:
+ [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.me/SparkItUp)
 
 ## To do
 * Tidy the code - it is rough and unpythonic.  Needs some work by a master Python guru.
