@@ -20,6 +20,9 @@ v0.93 - 15/8/2016 by Paul Hutchison:
 v0.94 - 05/01/2017 by Paul Hutchison:
  - Added option for keying dividers into walls/floor/none
    
+v0.95 - 2017-04-20 by Jim McBeath
+ - Added optional dimples
+
 This program is ugly software: you can clean it up yourself and/or mock it 
 under the unpublished terms of common civility.
 
@@ -36,7 +39,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-__version__ = "0.94" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
+__version__ = "0.95" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
 import os,sys,inkex,simplestyle,gettext,math
 _ = gettext.gettext
@@ -72,6 +75,31 @@ def drawCircle(r, (cx, cy)):
         inkex.addNS('type','sodipodi')      :'arc',
         'transform'                         :'' }
     inkex.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
+
+def dimpleStr(tabVec,Vx,Vy,dirx,diry,dirxN,diryN,ddir,isTab):
+  ds=''
+  if not isTab:
+    ddir = -ddir;
+  if dimpleHeight>0 and tabVec!=0:
+    if tabVec>0:
+      dimpleStart=(tabVec-dimpleLength)/2-dimpleHeight
+      tabSgn=1
+    else:
+      dimpleStart=(tabVec+dimpleLength)/2+dimpleHeight
+      tabSgn=-1
+    Vxd=Vx+dirxN*dimpleStart
+    Vyd=Vy+diryN*dimpleStart
+    ds+='L '+str(Vxd)+','+str(Vyd)+' '
+    Vxd=Vxd+(tabSgn*dirxN-ddir*dirx)*dimpleHeight
+    Vyd=Vyd+(tabSgn*diryN-ddir*diry)*dimpleHeight
+    ds+='L '+str(Vxd)+','+str(Vyd)+' '
+    Vxd=Vxd+tabSgn*dirxN*dimpleLength
+    Vyd=Vyd+tabSgn*diryN*dimpleLength
+    ds+='L '+str(Vxd)+','+str(Vyd)+' '
+    Vxd=Vxd+(tabSgn*dirxN+ddir*dirx)*dimpleHeight
+    Vyd=Vyd+(tabSgn*diryN+ddir*diry)*dimpleHeight
+    ds+='L '+str(Vxd)+','+str(Vyd)+' '
+  return ds;
 
 def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,numDividers,divSpacing,divOffset):
   #       root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing dividerOffset
@@ -154,16 +182,22 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
           Dy=Dy-diryN*thickness
           h+='L '+str(Dx)+','+str(Dy)+' '
           drawS(h)
+      # draw the gap
       Vx=Vx+dirx*gapWidth+dirxN*firstVec+first*dirx
       Vy=Vy+diry*gapWidth+diryN*firstVec+first*diry
       s+='L '+str(Vx)+','+str(Vy)+' '
+      # draw the starting edge of the tab
+      s+=dimpleStr(secondVec,Vx,Vy,dirx,diry,dirxN,diryN,1,isTab)
       Vx=Vx+dirxN*secondVec
       Vy=Vy+diryN*secondVec
       s+='L '+str(Vx)+','+str(Vy)+' '
     else:
+      # draw the tab
       Vx=Vx+dirx*tabWidth+dirxN*firstVec
       Vy=Vy+diry*tabWidth+diryN*firstVec
       s+='L '+str(Vx)+','+str(Vy)+' '
+      # draw the ending edge of the tab
+      s+=dimpleStr(secondVec,Vx,Vy,dirx,diry,dirxN,diryN,-1,isTab)
       Vx=Vx+dirxN*secondVec
       Vy=Vy+diryN*secondVec
       s+='L '+str(Vx)+','+str(Vy)+' '
@@ -226,6 +260,10 @@ class BoxMaker(inkex.Effect):
         dest='tab',default=25,help='Nominal Tab Width')
       self.OptionParser.add_option('--equal',action='store',type='int',
         dest='equal',default=0,help='Equal/Prop Tabs')
+      self.OptionParser.add_option('--dimpleheight',action='store',type='float',
+        dest='dimpleheight',default=0,help='Tab Dimple Height')
+      self.OptionParser.add_option('--dimplelength',action='store',type='float',
+        dest='dimplelength',default=0,help='Tab Dimple Tip Length')
       self.OptionParser.add_option('--hairline',action='store',type='int',
         dest='hairline',default=0,help='Line Thickness')
       self.OptionParser.add_option('--thickness',action='store',type='float',
@@ -248,7 +286,7 @@ class BoxMaker(inkex.Effect):
         dest='keydiv',default=3,help='Key dividers into walls/floor')
 
   def effect(self):
-    global parent,nomTab,equalTabs,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
+    global parent,nomTab,equalTabs,dimpleHeight,dimpleLength,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
     
         # Get access to main SVG document element and get its dimensions.
     svg = self.document.getroot()
@@ -306,6 +344,8 @@ class BoxMaker(inkex.Effect):
     thickness = self.unittouu( str(self.options.thickness)  + unit )
     nomTab = self.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
+    dimpleHeight=self.options.dimpleheight
+    dimpleLength=self.options.dimplelength
     kerf = self.unittouu( str(self.options.kerf)  + unit )
     clearance = self.unittouu( str(self.options.clearance)  + unit )
     layout=self.options.style
