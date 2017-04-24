@@ -1,6 +1,6 @@
 # BoxMaker: A free tool for creating boxes using tabbed construction
 
-_version 0.94 - 5 Jan 2017_
+_version 0.95 - 20 Apr 2017_
 
 Original box maker by Elliot White - http://www.twot.eu/111000/111000.html
 Heavily modified by Paul Hutchison
@@ -13,7 +13,7 @@ Heavily modified by Paul Hutchison
 ## Release Notes
  So far no serious bugs( i.e causing runtime errors ) have been found. The program works with python versions 2.6.5, 2.6.7 and 2.7.2, other version have not yet been tried except python 2.5.1 which fails with a syntax error.
 
-This version has been tried on windows XP, windows 7, Ubuntu and Mac OS X with no serious problems ( the live preview works most of the time but can be flaky).
+Version 0.94 has been tried on windows XP, windows 7, Ubuntu and Mac OS X with no serious problems ( the live preview works most of the time but can be flaky).
 
  Only crude input checking has been implemented in the program but as the only output is a drawing the worst that can happen is a messed up picture ( control-Z cures that problem ).
  
@@ -46,6 +46,11 @@ In order of appearance:
                                  Width, for proportional the side of a piece is divided 
                                  equally into tabs and 'spaces' with the tabs size 
                                  greater or equal to the Tab Width setting
+
+* Tab Dimple Height - the height of the dimple to add to the side of each tab, 0 for no dimple
+
+* Tab Dimple Tip Width - the width of the tip of the dimple; dimples are trapezoid shaped with
+  45-degree sides; using a dimple tip width of 0 gives a triangular dimple
 
 * Material Thickness - as it says
  
@@ -122,3 +127,4 @@ version | Date | Notes
 0.93 | (21 Sept 2015) | Updated versioning to match original author's updated v0.91 plus adding my 0.02 
 0.93a | (21 Sept 2015) | Added hairline line thickness option for Epilog lasers
 0.94 | (4 Jan 2017) | Divider keying options
+0.95 | (20 Apr 2017) | Added optional dimples on tabs
