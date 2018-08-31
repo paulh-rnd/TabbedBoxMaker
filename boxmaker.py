@@ -193,6 +193,82 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
   return s
 
   
+def get_pieces(boxtype, layout, X, Y, Z):
+  # layout format:(rootx),(rooty),Xlength,Ylength,tabInfo,tabbed,pieceType
+  # root= (spacing,X,Y,Z) * values in tuple
+  # tabInfo= <abcd> 0=holes 1=tabs
+  # tabbed= <abcd> 0=no tabs 1=tabs on this side
+  # (sides: a=top, b=right, c=bottom, d=left)
+  # pieceType: 1=XY, 2=XZ, 3=ZY
+  # note first two pieces in each set are the X-divider template and Y-divider template respectively
+  if boxtype==2: # One side open (X,Y)
+    if   layout==1: # Diagramatic Layout
+      pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1110,3],
+          [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1011,3],
+          [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2]]
+    elif layout==2: # 3 Piece Layout
+      pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1101,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1110,3],
+          [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1111,1]]
+    elif layout==3: # Inline(compact) Layout
+      pieces=[[(5,2,0,2),(1,0,0,0),X,Z,0b1111,0b1101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0101,0b1110,3],
+          [(4,2,0,1),(1,0,0,0),Z,Y,0b0101,0b1011,3],[(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1],
+          [(6,3,0,2),(1,0,0,0),X,Z,0b1111,0b0111,2]]
+    elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
+      pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1001,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1110,3],
+          [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1011,3],
+          [(4,1,0,2),(2,0,0,1),X,Y,0b0110,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b0111,2]]
+  elif boxtype==3: # Two sides open (X,Y and X,Z)
+    if   layout==1: # Diagramatic Layout
+      pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],                
+          [(2,0,0,1),(2,0,0,1),X,Y,0b0010,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1001,3]]
+    elif layout==2: # 3 Piece Layout
+      pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],
+          [(2,0,0,1),(2,0,0,1),X,Y,0b0010,0b1101,1]]
+    elif layout==3: # Inline(compact) Layout
+      pieces=[[(2,2,0,2),(1,0,0,0),X,Z,0b1010,0b0111,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1111,0b1100,3],
+          [(2,1,0,0),(1,0,0,0),X,Y,0b0010,0b1101,1],[(4,2,0,1),(1,0,0,0),Z,Y,0b1111,0b1001,3]]
+    elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
+      pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],
+          [(2,0,0,1),(2,0,0,1),X,Y,0b1110,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1001,3]]
+  elif boxtype==4: # Three sides open (X,Y, X,Z and Z,Y)
+    if layout==2: # 3 Piece Layout
+      pieces=[[(2,2,0,0),(2,0,1,0),X,Z,0b1111,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b0110,3],
+          [(2,2,0,0),(1,0,0,0),X,Y,0b1100,0b0011,1]]
+    else:
+      pieces=[[(3,3,0,0),(1,0,0,0),X,Z,0b1110,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b0110,3],
+          [(2,2,0,0),(1,0,0,0),X,Y,0b1100,0b0011,1]]
+  elif boxtype==5: # Opposite ends open (X,Y)
+    if   layout==1: # Diagramatic Layout
+      pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1010,3],
+          [(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1010,3]]
+    elif layout==2: # 2 Piece Layout
+      pieces=[[(1,0,0,1),(1,0,1,1),X,Z,0b1010,0b0101,2],[(2,1,0,1),(1,0,0,1),Z,Y,0b1111,0b1010,3]]
+    elif layout==3: # Inline(compact) Layout
+      pieces=[[(1,0,0,0),(1,0,0,0),X,Z,0b1010,0b0101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1111,0b1010,3],
+          [(2,1,0,0),(1,0,0,0),X,Z,0b1010,0b0101,2],[(4,2,0,1),(2,0,0,0),Z,Y,0b1111,0b1010,3]]
+    elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
+      pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1011,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b0111,0b1010,3],
+          [(2,0,0,1),(1,0,0,0),X,Z,0b1110,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1101,0b1010,3]]
+  elif boxtype==6: # 2 panels jointed (X,Y and Z,Y joined along Y)
+    pieces=[[(1,0,0,0),(1,0,0,0),X,Y,0b1011,0b0100,1],[(2,1,0,0),(1,0,0,0),Z,Y,0b1111,0b0001,3]]
+  else: # Fully enclosed
+    if   layout==1: # Diagramatic Layout
+      pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1111,3],
+          [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1111,3],
+          [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b1111,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b1111,2]]
+    elif layout==2: # 3 Piece Layout
+      pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1111,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1111,3],
+          [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1111,1]]
+    elif layout==3: # Inline(compact) Layout
+      pieces=[[(5,2,0,2),(1,0,0,0),X,Z,0b1111,0b1111,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0101,0b1111,3],
+          [(6,3,0,2),(1,0,0,0),X,Z,0b1111,0b1111,2],[(4,2,0,1),(1,0,0,0),Z,Y,0b0101,0b1111,3],
+          [(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1],[(1,0,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1]]
+    elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
+      pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1001,0b1111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1111,3],
+          [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1111,3],
+          [(4,1,0,2),(2,0,0,1),X,Y,0b0110,0b1111,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b1111,2]]
+  return pieces
+
 class BoxMaker(inkex.Effect):
   def __init__(self):
       # Call the base class constructor.
@@ -359,79 +435,7 @@ class BoxMaker(inkex.Effect):
 
     if error: exit()
    
-    # layout format:(rootx),(rooty),Xlength,Ylength,tabInfo,tabbed,pieceType
-    # root= (spacing,X,Y,Z) * values in tuple
-    # tabInfo= <abcd> 0=holes 1=tabs
-    # tabbed= <abcd> 0=no tabs 1=tabs on this side
-    # (sides: a=top, b=right, c=bottom, d=left)
-    # pieceType: 1=XY, 2=XZ, 3=ZY
-    # note first two pieces in each set are the X-divider template and Y-divider template respectively
-    if boxtype==2: # One side open (X,Y)
-      if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1110,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1011,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2]]
-      elif layout==2: # 3 Piece Layout
-        pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1101,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1110,3],
-                [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1111,1]]
-      elif layout==3: # Inline(compact) Layout
-        pieces=[[(5,2,0,2),(1,0,0,0),X,Z,0b1111,0b1101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0101,0b1110,3],
-                [(4,2,0,1),(1,0,0,0),Z,Y,0b0101,0b1011,3],[(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1],
-                [(6,3,0,2),(1,0,0,0),X,Z,0b1111,0b0111,2]]
-      elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1001,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1110,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1011,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0110,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b0111,2]]
-    elif boxtype==3: # Two sides open (X,Y and X,Z)
-      if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],                
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0010,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1001,3]]
-      elif layout==2: # 3 Piece Layout
-        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0010,0b1101,1]]
-      elif layout==3: # Inline(compact) Layout
-        pieces=[[(2,2,0,2),(1,0,0,0),X,Z,0b1010,0b0111,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1111,0b1100,3],
-                [(2,1,0,0),(1,0,0,0),X,Y,0b0010,0b1101,1],[(4,2,0,1),(1,0,0,0),Z,Y,0b1111,0b1001,3]]
-      elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b1110,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1001,3]]
-    elif boxtype==4: # Three sides open (X,Y, X,Z and Z,Y)
-      if layout==2: # 3 Piece Layout
-        pieces=[[(2,2,0,0),(2,0,1,0),X,Z,0b1111,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b0110,3],
-                [(2,2,0,0),(1,0,0,0),X,Y,0b1100,0b0011,1]]
-      else:
-        pieces=[[(3,3,0,0),(1,0,0,0),X,Z,0b1110,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b0110,3],
-                [(2,2,0,0),(1,0,0,0),X,Y,0b1100,0b0011,1]]
-    elif boxtype==5: # Opposite ends open (X,Y)
-      if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1010,3],
-                [(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1010,3]]
-      elif layout==2: # 2 Piece Layout
-        pieces=[[(1,0,0,1),(1,0,1,1),X,Z,0b1010,0b0101,2],[(2,1,0,1),(1,0,0,1),Z,Y,0b1111,0b1010,3]]
-      elif layout==3: # Inline(compact) Layout
-        pieces=[[(1,0,0,0),(1,0,0,0),X,Z,0b1010,0b0101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1111,0b1010,3],
-                [(2,1,0,0),(1,0,0,0),X,Z,0b1010,0b0101,2],[(4,2,0,1),(2,0,0,0),Z,Y,0b1111,0b1010,3]]
-      elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1011,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b0111,0b1010,3],
-                [(2,0,0,1),(1,0,0,0),X,Z,0b1110,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1101,0b1010,3]]
-    elif boxtype==6: # 2 panels jointed (X,Y and Z,Y joined along Y)
-      pieces=[[(1,0,0,0),(1,0,0,0),X,Y,0b1011,0b0100,1],[(2,1,0,0),(1,0,0,0),Z,Y,0b1111,0b0001,3]]
-    else: # Fully enclosed
-      if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1111,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1111,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b1111,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b1111,2]]
-      elif layout==2: # 3 Piece Layout
-        pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1111,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1111,3],
-                [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1111,1]]
-      elif layout==3: # Inline(compact) Layout
-        pieces=[[(5,2,0,2),(1,0,0,0),X,Z,0b1111,0b1111,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0101,0b1111,3],
-                [(6,3,0,2),(1,0,0,0),X,Z,0b1111,0b1111,2],[(4,2,0,1),(1,0,0,0),Z,Y,0b0101,0b1111,3],
-                [(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1],[(1,0,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1]]
-      elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1001,0b1111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1111,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1111,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0110,0b1111,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b1111,2]]
+    pieces = get_pieces(boxtype, layout, X, Y, Z)
 
     for idx, piece in enumerate(pieces): # generate and draw each piece of the box
       (xs,xx,xy,xz)=piece[0]
