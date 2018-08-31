@@ -513,26 +513,28 @@ class BoxMaker(inkex.Effect):
         else:
           drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing,divOffset))      # side d
 
-        if idx==0:
-          if not keydivwalls:
-            a=1;
-            b=1;
-            c=1;
-            d=1;
-            atabs=0;
-            btabs=0;
-            ctabs=0;
-            dtabs=0;
-          y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
-          for n in range(0,divx): # generate X dividers
+      if idx==0:
+        if not keydivwalls:
+          a=1;
+          b=1;
+          c=1;
+          d=1;
+          atabs=0;
+          btabs=0;
+          ctabs=0;
+          dtabs=0;
+        y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
+        for n in range(0,divx): # generate X dividers
+          with group("Side {} X-div {}".format(idx + 1, n + 1)):
             x=n*(spacing+X)  # root x co-ord for piece      
             drawS(side((x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0,divOffset))          # side a
             drawS(side((x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if keydivwalls*b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing,divOffset))     # side b
             drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,divOffset)) # side c
             drawS(side((x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,divOffset))      # side d
-        elif idx==1:
-          y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
-          for n in range(0,divy): # generate Y dividers 
+      elif idx==1:
+        y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
+        for n in range(0,divy): # generate Y dividers 
+          with group("Side {} Y-div {}".format(idx + 1, n + 1)):
             x=n*(spacing+Z)  # root x co-ord for piece
             drawS(side((x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,divx*yholes,yspacing,thickness))          # side a
             drawS(side((x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0,thickness))     # side b
