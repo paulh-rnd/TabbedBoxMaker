@@ -39,6 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __version__ = "0.94" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
 import os,sys,inkex,simplestyle,gettext,math
+from contextlib import contextmanager
 _ = gettext.gettext
 
 linethickness = 1 # default unless overridden by settings
@@ -55,6 +56,21 @@ def drawS(XYstring):         # Draw lines from a list
   drw = {'style':simplestyle.formatStyle(style),inkex.addNS('label','inkscape'):name,'d':XYstring}
   inkex.etree.SubElement(parent, inkex.addNS('path','svg'), drw )
   return
+
+@contextmanager
+def group(name=""):
+    global parent
+    old_parent = parent
+    parent = inkex.etree.SubElement(
+        parent,
+        inkex.addNS('g', 'svg'),
+        {
+          inkex.addNS('inkscape', 'label') : name,
+          'id': name,
+        })
+    yield
+    parent = old_parent
+
 
 # jslee - shamelessly adapted from sample code on below Inkscape wiki page 2015-07-28
 # http://wiki.inkscape.org/wiki/index.php/Generating_objects_from_extensions
@@ -438,91 +454,92 @@ class BoxMaker(inkex.Effect):
     pieces = get_pieces(boxtype, layout, X, Y, Z)
 
     for idx, piece in enumerate(pieces): # generate and draw each piece of the box
-      (xs,xx,xy,xz)=piece[0]
-      (ys,yx,yy,yz)=piece[1]
-      x=xs*spacing+xx*X+xy*Y+xz*Z  # root x co-ord for piece
-      y=ys*spacing+yx*X+yy*Y+yz*Z  # root y co-ord for piece
-      dx=piece[2]
-      dy=piece[3]
-      tabs=piece[4]
-      a=tabs>>3&1; b=tabs>>2&1; c=tabs>>1&1; d=tabs&1 # extract tab status for each side
-      tabbed=piece[5]
-      atabs=tabbed>>3&1; btabs=tabbed>>2&1; ctabs=tabbed>>1&1; dtabs=tabbed&1 # extract tabbed flag for each side
-      xspacing=(X-thickness)/(divy+1)
-      yspacing=(Y-thickness)/(divx+1)
-      xholes = 1 if piece[6]<3 else 0
-      yholes = 1 if piece[6]!=2 else 0
-      wall = 1 if piece[6]>1 else 0
-      floor = 1 if piece[6]==1 else 0
-      railholes = 1 if piece[6]==3 else 0
+      with group("Side {}".format(idx + 1)):
+        (xs,xx,xy,xz)=piece[0]
+        (ys,yx,yy,yz)=piece[1]
+        x=xs*spacing+xx*X+xy*Y+xz*Z  # root x co-ord for piece
+        y=ys*spacing+yx*X+yy*Y+yz*Z  # root y co-ord for piece
+        dx=piece[2]
+        dy=piece[3]
+        tabs=piece[4]
+        a=tabs>>3&1; b=tabs>>2&1; c=tabs>>1&1; d=tabs&1 # extract tab status for each side
+        tabbed=piece[5]
+        atabs=tabbed>>3&1; btabs=tabbed>>2&1; ctabs=tabbed>>1&1; dtabs=tabbed&1 # extract tabbed flag for each side
+        xspacing=(X-thickness)/(divy+1)
+        yspacing=(Y-thickness)/(divx+1)
+        xholes = 1 if piece[6]<3 else 0
+        yholes = 1 if piece[6]!=2 else 0
+        wall = 1 if piece[6]>1 else 0
+        floor = 1 if piece[6]==1 else 0
+        railholes = 1 if piece[6]==3 else 0
 
-      if schroff and railholes:
-        log("rail holes enabled on piece %d at (%d, %d)" % (idx, x+thickness,y+thickness))
-        log("abcd = (%d,%d,%d,%d)" % (a,b,c,d))
-        log("dxdy = (%d,%d)" % (dx,dy))
-        rhxoffset = rail_mount_depth + thickness
-        if idx == 1:
-          rhx=x+rhxoffset
-        elif idx == 3:
-          rhx=x-rhxoffset+dx
-        else:
-          rhx=0
-        log("rhxoffset = %d, rhx= %d" % (rhxoffset, rhx))
-        rystart=y+(rail_height/2)+thickness
-        if rows == 1:
-          log("just one row this time, rystart = %d" % rystart)
-          rh1y=rystart+rail_mount_centre_offset
-          rh2y=rh1y+(row_centre_spacing-rail_mount_centre_offset)
-          drawCircle(rail_mount_radius,(rhx,rh1y))
-          drawCircle(rail_mount_radius,(rhx,rh2y))
-        else:
-          for n in range(0,rows):
-            log("drawing row %d, rystart = %d" % (n+1, rystart))
-            # if holes are offset (eg. Vector T-strut rails), they should be offset
-            # toward each other, ie. toward the centreline of the Schroff row
+        if schroff and railholes:
+          log("rail holes enabled on piece %d at (%d, %d)" % (idx, x+thickness,y+thickness))
+          log("abcd = (%d,%d,%d,%d)" % (a,b,c,d))
+          log("dxdy = (%d,%d)" % (dx,dy))
+          rhxoffset = rail_mount_depth + thickness
+          if idx == 1:
+            rhx=x+rhxoffset
+          elif idx == 3:
+            rhx=x-rhxoffset+dx
+          else:
+            rhx=0
+          log("rhxoffset = %d, rhx= %d" % (rhxoffset, rhx))
+          rystart=y+(rail_height/2)+thickness
+          if rows == 1:
+            log("just one row this time, rystart = %d" % rystart)
             rh1y=rystart+rail_mount_centre_offset
-            rh2y=rh1y+row_centre_spacing-rail_mount_centre_offset
+            rh2y=rh1y+(row_centre_spacing-rail_mount_centre_offset)
             drawCircle(rail_mount_radius,(rhx,rh1y))
             drawCircle(rail_mount_radius,(rhx,rh2y))
-            rystart+=row_centre_spacing+row_spacing+rail_height
+          else:
+            for n in range(0,rows):
+              log("drawing row %d, rystart = %d" % (n+1, rystart))
+              # if holes are offset (eg. Vector T-strut rails), they should be offset
+              # toward each other, ie. toward the centreline of the Schroff row
+              rh1y=rystart+rail_mount_centre_offset
+              rh2y=rh1y+row_centre_spacing-rail_mount_centre_offset
+              drawCircle(rail_mount_radius,(rhx,rh1y))
+              drawCircle(rail_mount_radius,(rhx,rh2y))
+              rystart+=row_centre_spacing+row_spacing+rail_height
 
-      # generate and draw the sides of each piece
-      drawS(side((x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*atabs,yspacing,divOffset))          # side a
-      drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*btabs,xspacing,divOffset))     # side b
-      if atabs:
-        drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0,divOffset)) # side c
-      else:
-        drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*ctabs,yspacing,divOffset)) # side c
-      if btabs:
-        drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0,divOffset))      # side d
-      else:
-        drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing,divOffset))      # side d
+        # generate and draw the sides of each piece
+        drawS(side((x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*atabs,yspacing,divOffset))          # side a
+        drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*btabs,xspacing,divOffset))     # side b
+        if atabs:
+          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0,divOffset)) # side c
+        else:
+          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*ctabs,yspacing,divOffset)) # side c
+        if btabs:
+          drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0,divOffset))      # side d
+        else:
+          drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing,divOffset))      # side d
 
-      if idx==0:
-        if not keydivwalls:
-          a=1;
-          b=1;
-          c=1;
-          d=1;
-          atabs=0;
-          btabs=0;
-          ctabs=0;
-          dtabs=0;
-        y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
-        for n in range(0,divx): # generate X dividers
-          x=n*(spacing+X)  # root x co-ord for piece      
-          drawS(side((x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0,divOffset))          # side a
-          drawS(side((x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if keydivwalls*b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing,divOffset))     # side b
-          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,divOffset)) # side c
-          drawS(side((x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,divOffset))      # side d
-      elif idx==1:
-        y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
-        for n in range(0,divy): # generate Y dividers 
-          x=n*(spacing+Z)  # root x co-ord for piece
-          drawS(side((x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,divx*yholes,yspacing,thickness))          # side a
-          drawS(side((x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0,thickness))     # side b
-          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,thickness)) # side c
-          drawS(side((x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,thickness))      # side d
+        if idx==0:
+          if not keydivwalls:
+            a=1;
+            b=1;
+            c=1;
+            d=1;
+            atabs=0;
+            btabs=0;
+            ctabs=0;
+            dtabs=0;
+          y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
+          for n in range(0,divx): # generate X dividers
+            x=n*(spacing+X)  # root x co-ord for piece      
+            drawS(side((x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0,divOffset))          # side a
+            drawS(side((x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if keydivwalls*b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing,divOffset))     # side b
+            drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,divOffset)) # side c
+            drawS(side((x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,divOffset))      # side d
+        elif idx==1:
+          y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
+          for n in range(0,divy): # generate Y dividers 
+            x=n*(spacing+Z)  # root x co-ord for piece
+            drawS(side((x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,divx*yholes,yspacing,thickness))          # side a
+            drawS(side((x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0,thickness))     # side b
+            drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,thickness)) # side c
+            drawS(side((x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,thickness))      # side d
 
 # Create effect instance and apply it.
 effect = BoxMaker()
