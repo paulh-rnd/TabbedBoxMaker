@@ -61,13 +61,11 @@ def drawS(XYstring):         # Draw lines from a list
 def group(name=""):
     global parent
     old_parent = parent
-    parent = inkex.etree.SubElement(
-        parent,
-        inkex.addNS('g', 'svg'),
-        {
-          inkex.addNS('inkscape', 'label') : name,
-          'id': name,
-        })
+    parent = inkex.etree.SubElement(parent,
+                                    inkex.addNS('g', 'svg'), {
+                                        inkex.addNS('inkscape', 'label'): name,
+                                        'id': name,
+                                    })
     yield
     parent = old_parent
 
