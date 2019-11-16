@@ -66,7 +66,7 @@ def drawS(XYstring):         # Draw lines from a list
 def drawCircle(r, coords):
     log("putting circle at (%d,%d)" % coords)
     style = { 'stroke': '#000000', 'stroke-width': str(linethickness), 'fill': 'none' }
-    ell_attribs = {'style':simplestyle.formatStyle(style),
+    ell_attribs = {'style':str(inkex.Style(style)),
         inkex.addNS('cx','sodipodi')        :str(coords[0]),
         inkex.addNS('cy','sodipodi')        :str(coords[1]),
         inkex.addNS('rx','sodipodi')        :str(r),
