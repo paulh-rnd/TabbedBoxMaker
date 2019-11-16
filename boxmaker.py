@@ -19,7 +19,10 @@ v0.93 - 15/8/2016 by Paul Hutchison:
  
 v0.94 - 05/01/2017 by Paul Hutchison:
  - Added option for keying dividers into walls/floor/none
-   
+
+v0.95 - 16/11/2019 by Marc Winoto
+- Updated to work with Inkscape 1.0 Beta
+
 This program is ugly software: you can clean it up yourself and/or mock it 
 under the unpublished terms of common civility.
 
@@ -38,8 +41,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 __version__ = "0.94" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
+from lxml import etree
 import os,sys,inkex,simplestyle,gettext,math
 _ = gettext.gettext
+
 
 linethickness = 1 # default unless overridden by settings
 
@@ -52,18 +57,18 @@ def log(text):
 def drawS(XYstring):         # Draw lines from a list
   name='part'
   style = { 'stroke': '#000000', 'stroke-width'  : str(linethickness), 'fill': 'none' }
-  drw = {'style':simplestyle.formatStyle(style),inkex.addNS('label','inkscape'):name,'d':XYstring}
-  inkex.etree.SubElement(parent, inkex.addNS('path','svg'), drw )
+  drw = {'style':str(inkex.Style(style)),inkex.addNS('label','inkscape'):name,'d':XYstring}
+  etree.SubElement(parent, inkex.addNS('path','svg'), drw )
   return
 
 # jslee - shamelessly adapted from sample code on below Inkscape wiki page 2015-07-28
 # http://wiki.inkscape.org/wiki/index.php/Generating_objects_from_extensions
-def drawCircle(r, (cx, cy)):
-    log("putting circle at (%d,%d)" % (cx,cy))
+def drawCircle(r, coords):
+    log("putting circle at (%d,%d)" % coords)
     style = { 'stroke': '#000000', 'stroke-width': str(linethickness), 'fill': 'none' }
     ell_attribs = {'style':simplestyle.formatStyle(style),
-        inkex.addNS('cx','sodipodi')        :str(cx),
-        inkex.addNS('cy','sodipodi')        :str(cy),
+        inkex.addNS('cx','sodipodi')        :str(coords[0]),
+        inkex.addNS('cy','sodipodi')        :str(coords[1]),
         inkex.addNS('rx','sodipodi')        :str(r),
         inkex.addNS('ry','sodipodi')        :str(r),
         inkex.addNS('start','sodipodi')     :str(0),
@@ -71,9 +76,9 @@ def drawCircle(r, (cx, cy)):
         inkex.addNS('open','sodipodi')      :'true', #all ellipse sectors we will draw are open
         inkex.addNS('type','sodipodi')      :'arc',
         'transform'                         :'' }
-    inkex.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
+    etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
 
-def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,numDividers,divSpacing,divOffset):
+def side(rxy,soxy,eoxy,tabVec,length,dirxy,isTab,isDivider,numDividers,divSpacing,divOffset):
   #       root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing dividerOffset
 
   divs=int(length/nomTab)  # divisions
@@ -99,13 +104,13 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
   s=[] 
   h=[]
   firstVec=0; secondVec=tabVec
-  dirxN=0 if dirx else 1 # used to select operation on x or y
-  diryN=0 if diry else 1
-  (Vx,Vy)=(rx+sox*thickness,ry+soy*thickness)
+  dirxN=0 if dirxy[0] else 1 # used to select operation on x or y
+  diryN=0 if dirxy[1] else 1
+  (Vx,Vy)=(rxy[0]+soxy[0]*thickness,rxy[1]+soxy[1]*thickness)
   s='M '+str(Vx)+','+str(Vy)+' '
 
-  if dirxN: Vy=ry # set correct line start
-  if diryN: Vx=rx
+  if dirxN: Vy=rxy[1] # set correct line start
+  if diryN: Vx=rxy[0]
 
   # generate line as tab or hole using:
   #   last co-ord:Vx,Vy ; tab dir:tabVec  ; direction:dirx,diry ; thickness:thickness
@@ -115,21 +120,21 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
     if ((n%2) ^ (not isTab)) and numDividers>0 and not isDivider: # draw holes for divider joints in side walls
       w=gapWidth if isTab else tabWidth
       if n==1:
-        w-=sox*thickness
+        w-=soxy[0]*thickness
       for m in range(1,int(numDividers)+1):
-        Dx=Vx+-diry*divSpacing*m
-        Dy=Vy+dirx*divSpacing*m
+        Dx=Vx+-dirxy[1]*divSpacing*m
+        Dy=Vy+dirxy[0]*divSpacing*m
         if n==1:
-          Dx+=sox*thickness
+          Dx+=soxy[0]*thickness
         h='M '+str(Dx)+','+str(Dy)+' '
-        Dx=Dx+dirx*w+dirxN*firstVec+first*dirx
-        Dy=Dy+diry*w+diryN*firstVec+first*diry
+        Dx=Dx+dirxy[0]*w+dirxN*firstVec+first*dirxy[0]
+        Dy=Dy+dirxy[1]*w+diryN*firstVec+first*dirxy[1]
         h+='L '+str(Dx)+','+str(Dy)+' '
         Dx=Dx+dirxN*secondVec
         Dy=Dy+diryN*secondVec
         h+='L '+str(Dx)+','+str(Dy)+' '
-        Dx=Dx-(dirx*w+dirxN*firstVec+first*dirx)
-        Dy=Dy-(diry*w+diryN*firstVec+first*diry)
+        Dx=Dx-(dirxy[0]*w+dirxN*firstVec+first*dirxy[0])
+        Dy=Dy-(dirxy[1]*w+diryN*firstVec+first*dirxy[1])
         h+='L '+str(Dx)+','+str(Dy)+' '
         Dx=Dx-dirxN*secondVec
         Dy=Dy-diryN*secondVec
@@ -138,31 +143,31 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
     if n%2:
       if n==1 and numDividers>0 and isDivider: # draw slots for dividers to slot into each other
         for m in range(1,int(numDividers)+1):
-          Dx=Vx+-diry*(divSpacing*m+divOffset)
-          Dy=Vy+dirx*(divSpacing*m-divOffset)
+          Dx=Vx+-dirxy[1]*(divSpacing*m+divOffset)
+          Dy=Vy+dirxy[0]*(divSpacing*m-divOffset)
           h='M '+str(Dx)+','+str(Dy)+' '
-          Dx=Dx+dirx*(first+length/2)
-          Dy=Dy+diry*(first+length/2)
+          Dx=Dx+dirxy[0]*(first+length/2)
+          Dy=Dy+dirxy[1]*(first+length/2)
           h+='L '+str(Dx)+','+str(Dy)+' '
           Dx=Dx+dirxN*thickness
           Dy=Dy+diryN*thickness
           h+='L '+str(Dx)+','+str(Dy)+' '
-          Dx=Dx-dirx*(first+length/2)
-          Dy=Dy-diry*(first+length/2)
+          Dx=Dx-dirxy[0]*(first+length/2)
+          Dy=Dy-dirxy[1]*(first+length/2)
           h+='L '+str(Dx)+','+str(Dy)+' '
           Dx=Dx-dirxN*thickness
           Dy=Dy-diryN*thickness
           h+='L '+str(Dx)+','+str(Dy)+' '
           drawS(h)
-      Vx=Vx+dirx*gapWidth+dirxN*firstVec+first*dirx
-      Vy=Vy+diry*gapWidth+diryN*firstVec+first*diry
+      Vx=Vx+dirxy[0]*gapWidth+dirxN*firstVec+first*dirxy[0]
+      Vy=Vy+dirxy[1]*gapWidth+diryN*firstVec+first*dirxy[1]
       s+='L '+str(Vx)+','+str(Vy)+' '
       Vx=Vx+dirxN*secondVec
       Vy=Vy+diryN*secondVec
       s+='L '+str(Vx)+','+str(Vy)+' '
     else:
-      Vx=Vx+dirx*tabWidth+dirxN*firstVec
-      Vy=Vy+diry*tabWidth+diryN*firstVec
+      Vx=Vx+dirxy[0]*tabWidth+dirxN*firstVec
+      Vy=Vy+dirxy[1]*tabWidth+diryN*firstVec
       s+='L '+str(Vx)+','+str(Vy)+' '
       Vx=Vx+dirxN*secondVec
       Vy=Vy+diryN*secondVec
@@ -171,20 +176,20 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
     first=0
     
   #finish the line off
-  s+='L '+str(rx+eox*thickness+dirx*length)+','+str(ry+eoy*thickness+diry*length)+' '
+  s+='L '+str(rxy[0]+eoxy[0]*thickness+dirxy[0]*length)+','+str(rxy[1]+eoxy[1]*thickness+dirxy[1]*length)+' '
   if isTab and numDividers>0 and not isDivider: # draw last for divider joints in side walls
     for m in range(1,int(numDividers)+1):
       Dx=Vx
-      Dy=Vy+dirx*divSpacing*m
+      Dy=Vy+dirxy[0]*divSpacing*m
       h='M '+str(Dx)+','+str(Dy)+' '
-      Dx=rx+eox*thickness+dirx*length
-      Dy=Dy+diry*tabWidth+diryN*firstVec+first*diry
+      Dx=rxy[0]+eoxy[0]*thickness+dirxy[0]*length
+      Dy=Dy+dirxy[1]*tabWidth+diryN*firstVec+first*dirxy[1]
       h+='L '+str(Dx)+','+str(Dy)+' '
       Dx=Dx+dirxN*secondVec
       Dy=Dy+diryN*secondVec
       h+='L '+str(Dx)+','+str(Dy)+' '
       Dx=Vx
-      Dy=Dy-(diry*tabWidth+diryN*firstVec+first*diry)
+      Dy=Dy-(dirxy[1]*tabWidth+diryN*firstVec+first*dirxy[1])
       h+='L '+str(Dx)+','+str(Dy)+' '
       Dx=Dx-dirxN*secondVec
       Dy=Dy-diryN*secondVec
@@ -198,53 +203,53 @@ class BoxMaker(inkex.Effect):
       # Call the base class constructor.
       inkex.Effect.__init__(self)
       # Define options
-      self.OptionParser.add_option('--schroff',action='store',type='int',
+      self.arg_parser.add_argument('--schroff',action='store',type=int,
         dest='schroff',default=0,help='Enable Schroff mode')
-      self.OptionParser.add_option('--rail_height',action='store',type='float',
+      self.arg_parser.add_argument('--rail_height',action='store',type=float,
         dest='rail_height',default=10.0,help='Height of rail')
-      self.OptionParser.add_option('--rail_mount_depth',action='store',type='float',
+      self.arg_parser.add_argument('--rail_mount_depth',action='store',type=float,
         dest='rail_mount_depth',default=17.4,help='Depth at which to place hole for rail mount bolt')
-      self.OptionParser.add_option('--rail_mount_centre_offset',action='store',type='float',
+      self.arg_parser.add_argument('--rail_mount_centre_offset',action='store',type=float,
         dest='rail_mount_centre_offset',default=0.0,help='How far toward row centreline to offset rail mount bolt (from rail centreline)')
-      self.OptionParser.add_option('--rows',action='store',type='int',
+      self.arg_parser.add_argument('--rows',action='store',type=int,
         dest='rows',default=0,help='Number of Schroff rows')
-      self.OptionParser.add_option('--hp',action='store',type='int',
+      self.arg_parser.add_argument('--hp',action='store',type=int,
         dest='hp',default=0,help='Width (TE/HP units) of Schroff rows')
-      self.OptionParser.add_option('--row_spacing',action='store',type='float',
+      self.arg_parser.add_argument('--row_spacing',action='store',type=float,
         dest='row_spacing',default=10.0,help='Height of rail')
-      self.OptionParser.add_option('--unit',action='store',type='string',
+      self.arg_parser.add_argument('--unit',action='store',type=str,
         dest='unit',default='mm',help='Measure Units')
-      self.OptionParser.add_option('--inside',action='store',type='int',
+      self.arg_parser.add_argument('--inside',action='store',type=int,
         dest='inside',default=0,help='Int/Ext Dimension')
-      self.OptionParser.add_option('--length',action='store',type='float',
+      self.arg_parser.add_argument('--length',action='store',type=float,
         dest='length',default=100,help='Length of Box')
-      self.OptionParser.add_option('--width',action='store',type='float',
+      self.arg_parser.add_argument('--width',action='store',type=float,
         dest='width',default=100,help='Width of Box')
-      self.OptionParser.add_option('--depth',action='store',type='float',
+      self.arg_parser.add_argument('--depth',action='store',type=float,
         dest='height',default=100,help='Height of Box')
-      self.OptionParser.add_option('--tab',action='store',type='float',
+      self.arg_parser.add_argument('--tab',action='store',type=float,
         dest='tab',default=25,help='Nominal Tab Width')
-      self.OptionParser.add_option('--equal',action='store',type='int',
+      self.arg_parser.add_argument('--equal',action='store',type=int,
         dest='equal',default=0,help='Equal/Prop Tabs')
-      self.OptionParser.add_option('--hairline',action='store',type='int',
+      self.arg_parser.add_argument('--hairline',action='store',type=int,
         dest='hairline',default=0,help='Line Thickness')
-      self.OptionParser.add_option('--thickness',action='store',type='float',
+      self.arg_parser.add_argument('--thickness',action='store',type=float,
         dest='thickness',default=10,help='Thickness of Material')
-      self.OptionParser.add_option('--kerf',action='store',type='float',
+      self.arg_parser.add_argument('--kerf',action='store',type=float,
         dest='kerf',default=0.5,help='Kerf (width) of cut')
-      self.OptionParser.add_option('--clearance',action='store',type='float',
+      self.arg_parser.add_argument('--clearance',action='store',type=float,
         dest='clearance',default=0.01,help='Clearance of joints')
-      self.OptionParser.add_option('--style',action='store',type='int',
+      self.arg_parser.add_argument('--style',action='store',type=int,
         dest='style',default=25,help='Layout/Style')
-      self.OptionParser.add_option('--spacing',action='store',type='float',
+      self.arg_parser.add_argument('--spacing',action='store',type=float,
         dest='spacing',default=25,help='Part Spacing')
-      self.OptionParser.add_option('--boxtype',action='store',type='int',
+      self.arg_parser.add_argument('--boxtype',action='store',type=int,
         dest='boxtype',default=25,help='Box type')
-      self.OptionParser.add_option('--div_l',action='store',type='int',
+      self.arg_parser.add_argument('--div_l',action='store',type=int,
         dest='div_l',default=25,help='Dividers (Length axis)')
-      self.OptionParser.add_option('--div_w',action='store',type='int',
+      self.arg_parser.add_argument('--div_w',action='store',type=int,
         dest='div_w',default=25,help='Dividers (Width axis)')
-      self.OptionParser.add_option('--keydiv',action='store',type='int',
+      self.arg_parser.add_argument('--keydiv',action='store',type=int,
         dest='keydiv',default=3,help='Key dividers into walls/floor')
 
   def effect(self):
@@ -254,15 +259,15 @@ class BoxMaker(inkex.Effect):
     svg = self.document.getroot()
     
         # Get the attributes:
-    widthDoc  = self.unittouu(svg.get('width'))
-    heightDoc = self.unittouu(svg.get('height'))
+    widthDoc  = self.svg.unittouu(svg.get('width'))
+    heightDoc = self.svg.unittouu(svg.get('height'))
 
         # Create a new layer.
-    layer = inkex.etree.SubElement(svg, 'g')
+    layer = etree.SubElement(svg, 'g')
     layer.set(inkex.addNS('label', 'inkscape'), 'newlayer')
     layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
     
-    parent=self.current_layer
+    parent=self.svg.get_current_layer()
     
     # Get script's option values.
     hairline=self.options.hairline
@@ -272,26 +277,26 @@ class BoxMaker(inkex.Effect):
 
     # Set the line thickness
     if hairline:
-        linethickness=self.unittouu('0.002in')
+        linethickness=self.svg.unittouu('0.002in')
     else:
         linethickness=1
         
     if schroff:
         hp=self.options.hp
         rows=self.options.rows
-        rail_height=self.unittouu(str(self.options.rail_height)+unit)
-        row_centre_spacing=self.unittouu(str(122.5)+unit)
-        row_spacing=self.unittouu(str(self.options.row_spacing)+unit)
-        rail_mount_depth=self.unittouu(str(self.options.rail_mount_depth)+unit)
-        rail_mount_centre_offset=self.unittouu(str(self.options.rail_mount_centre_offset)+unit)
-        rail_mount_radius=self.unittouu(str(2.5)+unit)
+        rail_height=self.svg.unittouu(str(self.options.rail_height)+unit)
+        row_centre_spacing=self.svg.unittouu(str(122.5)+unit)
+        row_spacing=self.svg.unittouu(str(self.options.row_spacing)+unit)
+        rail_mount_depth=self.svg.unittouu(str(self.options.rail_mount_depth)+unit)
+        rail_mount_centre_offset=self.svg.unittouu(str(self.options.rail_mount_centre_offset)+unit)
+        rail_mount_radius=self.svg.unittouu(str(2.5)+unit)
     
     ## minimally different behaviour for schroffmaker.inx vs. boxmaker.inx
     ## essentially schroffmaker.inx is just an alternate interface with different
     ## default settings, some options removed, and a tiny amount of extra logic
     if schroff:
         ## schroffmaker.inx
-        X = self.unittouu(str(self.options.hp * 5.08) + unit)
+        X = self.svg.unittouu(str(self.options.hp * 5.08) + unit)
         # 122.5mm vertical distance between mounting hole centres of 3U Schroff panels
         row_height = rows * (row_centre_spacing + rail_height)
         # rail spacing in between rows but never between rows and case panels
@@ -299,17 +304,17 @@ class BoxMaker(inkex.Effect):
         Y = row_height + row_spacing_total
     else:
         ## boxmaker.inx
-        X = self.unittouu( str(self.options.length)  + unit )
-        Y = self.unittouu( str(self.options.width) + unit )
+        X = self.svg.unittouu( str(self.options.length)  + unit )
+        Y = self.svg.unittouu( str(self.options.width) + unit )
 
-    Z = self.unittouu( str(self.options.height)  + unit )
-    thickness = self.unittouu( str(self.options.thickness)  + unit )
-    nomTab = self.unittouu( str(self.options.tab) + unit )
+    Z = self.svg.unittouu( str(self.options.height)  + unit )
+    thickness = self.svg.unittouu( str(self.options.thickness)  + unit )
+    nomTab = self.svg.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
-    kerf = self.unittouu( str(self.options.kerf)  + unit )
-    clearance = self.unittouu( str(self.options.clearance)  + unit )
+    kerf = self.svg.unittouu( str(self.options.kerf)  + unit )
+    clearance = self.svg.unittouu( str(self.options.clearance)  + unit )
     layout=self.options.style
-    spacing = self.unittouu( str(self.options.spacing)  + unit )
+    spacing = self.svg.unittouu( str(self.options.spacing)  + unit )
     boxtype = self.options.boxtype
     divx = self.options.div_l
     divy = self.options.div_w
@@ -469,8 +474,8 @@ class BoxMaker(inkex.Effect):
           log("just one row this time, rystart = %d" % rystart)
           rh1y=rystart+rail_mount_centre_offset
           rh2y=rh1y+(row_centre_spacing-rail_mount_centre_offset)
-          drawCircle(rail_mount_radius,(rhx,rh1y))
-          drawCircle(rail_mount_radius,(rhx,rh2y))
+          drawCircle(rail_mount_radius, (rhx, rh1y))
+          drawCircle(rail_mount_radius, (rhx, rh2y))
         else:
           for n in range(0,rows):
             log("drawing row %d, rystart = %d" % (n+1, rystart))
@@ -478,8 +483,8 @@ class BoxMaker(inkex.Effect):
             # toward each other, ie. toward the centreline of the Schroff row
             rh1y=rystart+rail_mount_centre_offset
             rh2y=rh1y+row_centre_spacing-rail_mount_centre_offset
-            drawCircle(rail_mount_radius,(rhx,rh1y))
-            drawCircle(rail_mount_radius,(rhx,rh2y))
+            drawCircle(rail_mount_radius, (rhx, rh1y))
+            drawCircle(rail_mount_radius, (rhx, rh2y))
             rystart+=row_centre_spacing+row_spacing+rail_height
 
       # generate and draw the sides of each piece
@@ -522,4 +527,4 @@ class BoxMaker(inkex.Effect):
 
 # Create effect instance and apply it.
 effect = BoxMaker()
-effect.affect()
+effect.run()

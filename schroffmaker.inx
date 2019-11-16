@@ -4,7 +4,7 @@
   <id>eu.twot.render.schroffboxmaker</id>
 
   <dependency type="executable" location="extensions">boxmaker.py</dependency>
-  <dependency type="executable" location="extensions">simpletransform.py</dependency>
+  <dependency type="executable" location="extensions">inkex/transforms.py</dependency>
   <dependency type="executable" location="extensions">inkex.py</dependency>
 
   <param name="unit" type="string" gui-hidden="true">mm</param>
