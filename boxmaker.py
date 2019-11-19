@@ -39,14 +39,30 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-__version__ = "0.94" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
+__version__ = "0.95" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
-from lxml import etree
-import os,sys,inkex,simplestyle,gettext,math
-_ = gettext.gettext
+import math
+import os
+import sys
+import inkex
+from inkex import localization as localization
+localization.localize()
 
-
+# Global variables
+parent = None
 linethickness = 1 # default unless overridden by settings
+thickness = 3
+nomTab = 6
+equalTabs = 0
+divx = 25
+divy = 25
+kerf = 0.5
+clearance = 0.01
+correction = kerf-clearance
+hairline = 0
+keydivwalls = 0
+keydivfloor = 0
+hp = 0
 
 def log(text):
   if 'SCHROFF_LOG' in os.environ:
@@ -58,7 +74,7 @@ def drawS(XYstring):         # Draw lines from a list
   name='part'
   style = { 'stroke': '#000000', 'stroke-width'  : str(linethickness), 'fill': 'none' }
   drw = {'style':str(inkex.Style(style)),inkex.addNS('label','inkscape'):name,'d':XYstring}
-  etree.SubElement(parent, inkex.addNS('path','svg'), drw )
+  inkex.elements.etree.SubElement(parent, inkex.addNS('path','svg'), drw )
   return
 
 # jslee - shamelessly adapted from sample code on below Inkscape wiki page 2015-07-28
@@ -76,10 +92,10 @@ def drawCircle(r, coords):
         inkex.addNS('open','sodipodi')      :'true', #all ellipse sectors we will draw are open
         inkex.addNS('type','sodipodi')      :'arc',
         'transform'                         :'' }
-    etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
+    inkex.elements.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
 
 def side(rxy,soxy,eoxy,tabVec,length,dirxy,isTab,isDivider,numDividers,divSpacing,divOffset):
-  #       root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing dividerOffset
+  #      root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing dividerOffset
 
   divs=int(length/nomTab)  # divisions
   if not divs%2: divs-=1   # make divs odd
@@ -253,7 +269,7 @@ class BoxMaker(inkex.Effect):
         dest='keydiv',default=3,help='Key dividers into walls/floor')
 
   def effect(self):
-    global parent,nomTab,equalTabs,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
+    global parent,nomTab,equalTabs,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor, hp
     
         # Get access to main SVG document element and get its dimensions.
     svg = self.document.getroot()
@@ -263,7 +279,7 @@ class BoxMaker(inkex.Effect):
     heightDoc = self.svg.unittouu(svg.get('height'))
 
         # Create a new layer.
-    layer = etree.SubElement(svg, 'g')
+    layer = inkex.elements.etree.SubElement(svg, 'g')
     layer.set(inkex.addNS('label', 'inkscape'), 'newlayer')
     layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
     
@@ -322,10 +338,10 @@ class BoxMaker(inkex.Effect):
     keydivfloor = 0 if self.options.keydiv == 3 or self.options.keydiv == 2 else 1
     divOffset = keydivwalls*thickness
         
-    if inside: # if inside dimension selected correct values to outside dimension
-      X+=thickness*2
-      Y+=thickness*2
-      Z+=thickness*2
+    if inside:  # if inside dimension selected correct values to outside dimension
+      X += thickness*2
+      Y += thickness*2
+      Z += thickness*2
 
     correction=kerf-clearance
 
@@ -333,33 +349,32 @@ class BoxMaker(inkex.Effect):
     # TODO restrict values to *correct* solutions
     # TODO restrict divisions to logical values
     error=0
-    
     if min(X,Y,Z)==0:
-      inkex.errormsg(_('Error: Dimensions must be non zero'))
+      inkex.errormsg(localization._('Error: Dimensions must be non zero'))
       error=1
     if max(X,Y,Z)>max(widthDoc,heightDoc)*10: # crude test
-      inkex.errormsg(_('Error: Dimensions Too Large'))
+      inkex.errormsg(localization._('Error: Dimensions Too Large'))
       error=1
     if min(X,Y,Z)<3*nomTab:
-      inkex.errormsg(_('Error: Tab size too large'))
+      inkex.errormsg(localization._('Error: Tab size too large'))
       error=1
     if nomTab<thickness:
-      inkex.errormsg(_('Error: Tab size too small'))
+      inkex.errormsg(localization._('Error: Tab size too small'))
       error=1     
     if thickness==0:
-      inkex.errormsg(_('Error: Thickness is zero'))
+      inkex.errormsg(localization._('Error: Thickness is zero'))
       error=1     
     if thickness>min(X,Y,Z)/3: # crude test
-      inkex.errormsg(_('Error: Material too thick'))
+      inkex.errormsg(localization._('Error: Material too thick'))
       error=1     
     if correction>min(X,Y,Z)/3: # crude test
-      inkex.errormsg(_('Error: Kerf/Clearence too large'))
+      inkex.errormsg(localization._('Error: Kerf/Clearence too large'))
       error=1     
     if spacing>max(X,Y,Z)*10: # crude test
-      inkex.errormsg(_('Error: Spacing too large'))
+      inkex.errormsg(localization._('Error: Spacing too large'))
       error=1     
     if spacing<kerf:
-      inkex.errormsg(_('Error: Spacing too small'))
+      inkex.errormsg(localization._('Error: Spacing too small'))
       error=1     
 
     if error: exit()
@@ -501,14 +516,14 @@ class BoxMaker(inkex.Effect):
 
       if idx==0:
         if not keydivwalls:
-          a=1;
-          b=1;
-          c=1;
-          d=1;
-          atabs=0;
-          btabs=0;
-          ctabs=0;
-          dtabs=0;
+          a = 1
+          b = 1
+          c = 1
+          d = 1
+          atabs = 0
+          btabs = 0
+          ctabs = 0
+          dtabs = 0
         y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
         for n in range(0,divx): # generate X dividers
           x=n*(spacing+X)  # root x co-ord for piece      
