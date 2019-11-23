@@ -79,28 +79,33 @@ def drawS(XYstring):         # Draw lines from a list
 
 # jslee - shamelessly adapted from sample code on below Inkscape wiki page 2015-07-28
 # http://wiki.inkscape.org/wiki/index.php/Generating_objects_from_extensions
+
 def drawCircle(r, coords):
     log("putting circle at (%d,%d)" % coords)
-    style = { 'stroke': '#000000', 'stroke-width': str(linethickness), 'fill': 'none' }
-    ell_attribs = {'style':str(inkex.Style(style)),
-        inkex.addNS('cx','sodipodi')        :str(coords[0]),
-        inkex.addNS('cy','sodipodi')        :str(coords[1]),
-        inkex.addNS('rx','sodipodi')        :str(r),
-        inkex.addNS('ry','sodipodi')        :str(r),
-        inkex.addNS('start','sodipodi')     :str(0),
-        inkex.addNS('end','sodipodi')       :str(2*math.pi),
-        inkex.addNS('open','sodipodi')      :'true', #all ellipse sectors we will draw are open
-        inkex.addNS('type','sodipodi')      :'arc',
-        'transform'                         :'' }
-    inkex.elements.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
+    style = {'stroke': '#000000',
+             'stroke-width': str(linethickness), 'fill': 'none'}
+    ell_attribs = {'style': str(inkex.Style(style)),
+                   inkex.addNS('cx', 'sodipodi'): str(coords[0]),
+                   inkex.addNS('cy', 'sodipodi'): str(coords[1]),
+                   inkex.addNS('rx', 'sodipodi'): str(r),
+                   inkex.addNS('ry', 'sodipodi'): str(r),
+                   inkex.addNS('start', 'sodipodi'): str(0),
+                   inkex.addNS('end', 'sodipodi'): str(2*math.pi),
+                   # all ellipse sectors we will draw are open
+                   inkex.addNS('open', 'sodipodi'): 'true',
+                   inkex.addNS('type', 'sodipodi'): 'arc',
+                   'transform': ''}
+    inkex.elements.etree.SubElement(
+        parent, inkex.addNS('path', 'svg'), ell_attribs)
 
 def side(rxy,soxy,eoxy,tabVec,length,dirxy,isTab,isDivider,numDividers,divSpacing,divOffset):
   #      root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing dividerOffset
 
-  divs=int(length/nomTab)  # divisions
-  if not divs%2: divs-=1   # make divs odd
-  divs=float(divs)
-  tabs=(divs-1)/2          # tabs for side
+  divs = int(length/nomTab)  # divisions
+  if not divs % 2:
+    divs -= 1   # make divs odd
+  divs = float(divs)
+  tabs = (divs-1)/2          # tabs for side
   
   if equalTabs:
     gapWidth=tabWidth=length/divs
@@ -230,34 +235,34 @@ class BoxMaker(inkex.Effect):
 
       # Normal tabbed boxed in the order they appear.
       self.arg_parser.add_argument('--unit', action='store', type=str, dest='unit', default='mm', help='Units of measure')
-      self.arg_parser.add_argument('--inside', action='store', type=int, dest='inside', default=0, help='Are specified dimensions internal or external')
+      self.arg_parser.add_argument('--inside', action='store', type=bool, dest='inside', default=0, help='Are specified dimensions internal or external')
       self.arg_parser.add_argument('--length', action='store', type=float, dest='length', default=100, help='Length of Box')
-      self.arg_parser.add_argument('--width', action='store', type=float, dest='width', default=100, help='Width of Box')
-      self.arg_parser.add_argument('--depth', action='store', type=float, dest='height', default=100, help='Height of Box')
-      self.arg_parser.add_argument('--tab', action='store', type=float, dest='tab', default=25, help='Nominal Tab Width')
+      self.arg_parser.add_argument('--width', action='store', type=float, dest='width', default=240, help='Width of Box')
+      self.arg_parser.add_argument('--depth', action='store', type=float, dest='height', default=50, help='Height of Box')
+      self.arg_parser.add_argument('--tab', action='store', type=float, dest='tab', default=6.0 , help='Nominal Tab Width')
       self.arg_parser.add_argument('--equal', action='store', type=int, dest='equal', default=0, help='Equal/Prop Tabs')
-      self.arg_parser.add_argument('--hairline', action='store', type=int, dest='hairline', default=0, help='Line Thickness')
-      self.arg_parser.add_argument('--thickness', action='store', type=float, dest='thickness', default=10, help='Thickness of Material')
+      self.arg_parser.add_argument('--hairline', action='store', type=str, dest='hairline', default=0, help='Line Thickness')
+      self.arg_parser.add_argument('--thickness', action='store', type=float, dest='thickness', default=3.0, help='Thickness of Material')
       self.arg_parser.add_argument('--kerf', action='store', type=float, dest='kerf', default=0.5, help='Kerf (width) of cut')
       self.arg_parser.add_argument('--clearance', action='store', type=float, dest='clearance', default=0.01, help='Clearance of joints')
       self.arg_parser.add_argument('--style', action='store', type=int, dest='style', default=1, help='Layout/Style')
-      self.arg_parser.add_argument('--boxtype', action='store', type=int, dest='boxtype', default=25, help='Box type')
-      self.arg_parser.add_argument('--div_l', action='store', type=int, dest='div_l', default=25, help='Dividers (Length axis)')
-      self.arg_parser.add_argument('--div_w', action='store', type=int, dest='div_w', default=25, help='Dividers (Width axis)')
+      self.arg_parser.add_argument('--boxtype', action='store', type=int, dest='boxtype', default=1, help='Box type')
+      self.arg_parser.add_argument('--div_l', action='store', type=int, dest='div_l', default=2, help='Dividers (Length axis)')
+      self.arg_parser.add_argument('--div_w', action='store', type=int, dest='div_w', default=3, help='Dividers (Width axis)')
       self.arg_parser.add_argument('--keydiv', action='store', type=int, dest='keydiv', default=3, help='Key dividers into walls/floor')
       self.arg_parser.add_argument('--spacing', action='store', type=float, dest='spacing', default=25, help='Part Spacing')
 
   def effect(self):
-    global parent,nomTab,equalTabs,materialThickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor, hp
+    global parent, nomTab, equalTabs, materialThickness, correction, divx, divy, hairline, linethickness, keydivwalls, keydivfloor, hp
     
-        # Get access to main SVG document element and get its dimensions.
+    # Get access to main SVG document element and get its dimensions.
     svg = self.document.getroot()
     
-        # Get the attributes:
+    # Get the attributes:
     widthDoc  = self.svg.unittouu(svg.get('width'))
     heightDoc = self.svg.unittouu(svg.get('height'))
 
-        # Create a new layer.
+    # Create a new layer.
     layer = inkex.elements.etree.SubElement(svg, 'g')
     layer.set(inkex.addNS('label', 'inkscape'), 'newlayer')
     layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
@@ -271,10 +276,7 @@ class BoxMaker(inkex.Effect):
     schroff=self.options.schroff
 
     # Set the line thickness
-    if hairline:
-        linethickness=self.svg.unittouu('0.002in')
-    else:
-        linethickness=1
+    linethickness=self.svg.unittouu(hairline)
         
     if schroff:
         hp=self.options.hp

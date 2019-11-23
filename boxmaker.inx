@@ -6,70 +6,77 @@
   <dependency type="executable" location="extensions">boxmaker.py</dependency>
   <dependency type="executable" location="extensions">inkex/transforms.py</dependency>
   <dependency type="executable" location="extensions">inkex.py</dependency>
-
-  <param name="unit" _gui-text="Unit" type="optiongroup" appearance="minimal">
-    <option value="mm">mm</option>
-    <option value="cm">cm</option>
-    <option value="in">in</option>
-  </param>
-
-  <param name="inside" type="optiongroup" _gui-text="Box Dimensions">
-    <_option value="1">Inside</_option>
-    <_option value="0">Outside</_option>
-  </param>
-
-  <param name="length" type="float" precision="3" min="0.0" max="10000.0" _gui-text="Length">180</param>
-  <param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Width">240</param>
-  <param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Height">50</param>
-  <param name="tab" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Minimum/Prefered Tab Width">6.0</param> 
-
-  <param name="equal" type="optiongroup" _gui-text="Tab Width">
-    <_option value="0">Fixed</_option>
-    <_option value="1">Proportional</_option>
-  </param>
-
-  <param name="hairline" type="optiongroup" _gui-text="Line Thickness" appearance="minimal">
-    <_option value="0">Default</_option>
-    <_option value="1">Hairline (0.002" for Epilog)</_option>
-  </param>
-
-  <param name="thickness" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Material Thickness">3.0</param>
-  <param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Kerf (cut width)">0.1</param>
-  <param name="clearance" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Joint clearance">0.01</param>
-	
-  <param name="style" _gui-text="Layout/Style" type="optiongroup" appearance="minimal">
-    <option value="1">Diagramatic</option>
-    <option value="2">3 piece</option>
-    <option value="3">Inline(compact)</option>
-    <option value="4">Diag Alternate Tabs</option>
-  </param>
-
-  <param name="boxtype" _gui-text="Box Type" type="optiongroup" appearance="minimal">
-    <option value="1">Fully enclosed</option>
-    <option value="2">One side open (LxW)</option>
-    <option value="3">Two sides open (LxW and LxH)</option>
-    <option value="4">Three sides open (LxW, LxH, HxW)</option>
-    <option value="5">Opposite ends open (LxW)</option>
-    <option value="6">Two panels only (LxW and LxH)</option>
-  </param>
-
-  <param name="div_l" type="int" min="0" max="10" _gui-text="Dividers (Length axis)">2</param>
-  <param name="div_w" type="int" min="0" max="10" _gui-text="Dividers (Width axis)">3</param>
-  <param name="keydiv" _gui-text="Key the dividers into" type="optiongroup" appearance="minimal">
-    <option value="3">None</option>
-    <option value="2">Walls</option>
-    <option value="1">Floor / Ceiling</option>
-    <option value="0">All sides</option>
-  </param>
-
-  <param name="spacing" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Space Between Parts">1.0</param> 
   
+  <param name="tab" type="notebook">
+    <page name="Options" _gui-text="Options">
+      <param name="unit" _gui-text="Unit" type="optiongroup" appearance="minimal">
+        <option value="mm">mm</option>
+        <option value="cm">cm</option>
+        <option value="in">in</option>
+      </param>
+
+      <param name="length" type="float" precision="3" min="0.0" max="10000.0" _gui-text="Length">180</param>
+      <param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Width">240</param>
+      <param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Height">50</param>
+      <param name="tab" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Minimum/Prefered Tab Width">6.0</param> 
+
+      <param name="equal" type="optiongroup" _gui-text="Tab Width">
+        <_option value="0">Fixed</_option>
+        <_option value="1">Proportional</_option>
+      </param>
+
+      <param name="hairline" type="optiongroup" _gui-text="Line Thickness">
+        <_option value="1.0mm">Default 1.0mm</_option>
+        <_option value="0.05mm">Hairline (0.05mm for Epilog)</_option>
+      </param>
+
+      <param name="thickness" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Material Thickness">3.0</param>
+      <param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Kerf (cut width)">0.1</param>
+      <param name="clearance" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Joint clearance">0.01</param>
+      
+      <param name="style" _gui-text="Layout/Style" type="optiongroup" appearance="minimal">
+        <option value="1">Diagramatic</option>
+        <option value="2">3 piece</option>
+        <option value="3">Inline(compact)</option>
+        <option value="4">Diag Alternate Tabs</option>
+      </param>
+
+      <param name="boxtype" _gui-text="Box Type" type="optiongroup" appearance="minimal">
+        <option value="1">Fully enclosed</option>
+        <option value="2">One side open (LxW)</option>
+        <option value="3">Two sides open (LxW and LxH)</option>
+        <option value="4">Three sides open (LxW, LxH, HxW)</option>
+        <option value="5">Opposite ends open (LxW)</option>
+        <option value="6">Two panels only (LxW and LxH)</option>
+      </param>
+
+      <param name="div_l" type="int" min="0" max="10" _gui-text="Dividers (Length axis)">2</param>
+      <param name="div_w" type="int" min="0" max="10" _gui-text="Dividers (Width axis)">3</param>
+      <param name="keydiv" _gui-text="Key the dividers into" type="optiongroup" appearance="minimal">
+        <option value="3">None</option>
+        <option value="2">Walls</option>
+        <option value="1">Floor / Ceiling</option>
+        <option value="0">All sides</option>
+      </param>
+
+      <param name="spacing" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Space Between Parts">1.0</param> 
+      
+      <param name="inside" type="bool" _gui-text="Use internal box dimensions">false</param>
+    </page>
+
+    <page name="Help" _gui-text="Help">
+      <param name="name" type="description" appearance="header">Tabbed Box Maker</param>
+      <label>Generate box plans with finger joins suitable for a laser cutter.</label>
+    </page> 
+  </param>
+
   <effect>
     <object-type>all</object-type>
     <effects-menu>
       <submenu _name="Laser Tools" />
     </effects-menu>
   </effect>
+
   <script>
     <command reldir="extensions" interpreter="python">boxmaker.py</command>
   </script>
