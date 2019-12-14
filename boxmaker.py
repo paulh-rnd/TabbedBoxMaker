@@ -48,27 +48,31 @@ import inkex
 from inkex import localization as localization
 localization.localize()
 
+debug = True
 # Global variables
 parent = None
-linethickness = 1 # default unless overridden by settings
-materialThickness = 3
-nomTab = 6
-equalTabs = 0
-divx = 25
-divy = 25
-kerf = 0.5
-clearance = 0.01
-correction = kerf-clearance
-hairline = 0
-keydivwalls = 0
-keydivfloor = 0
-hp = 0
+linethickness = None #1 # default unless overridden by settings
+materialThickness = None #3
+nomTab = None #6
+equalTabs = None #0
+divx = None #25
+divy = None #25
+kerf = None #0.5
+clearance = None #0.01
+correction = None #kerf-clearance
+hairline = None 
+keydivwalls = None #0
+keydivfloor = None #0
+hp = None #0
 
 def log(text):
   if 'SCHROFF_LOG' in os.environ:
     f = open(os.environ.get('SCHROFF_LOG'), 'a')
     f.write(text + "\n")
 
+def debug(text):
+  if debug:
+      inkex.utils.debug(text)
 
 def drawS(XYstring):         # Draw lines from a list
   name='part'
@@ -234,14 +238,14 @@ class BoxMaker(inkex.Effect):
       self.arg_parser.add_argument('--row_spacing', action='store', type=float, dest='row_spacing', default=10.0, help='Height of rail')
 
       # Normal tabbed boxed in the order they appear.
+      self.arg_parser.add_argument('--container', type=str, dest='container', help='Container')
       self.arg_parser.add_argument('--unit', action='store', type=str, dest='unit', default='mm', help='Units of measure')
-      self.arg_parser.add_argument('--inside', action='store', type=bool, dest='inside', default=0, help='Are specified dimensions internal or external')
-      self.arg_parser.add_argument('--length', action='store', type=float, dest='length', default=100, help='Length of Box')
+      self.arg_parser.add_argument('--length', action='store', type=float, dest='length', default=180, help='Length of Box')
       self.arg_parser.add_argument('--width', action='store', type=float, dest='width', default=240, help='Width of Box')
       self.arg_parser.add_argument('--depth', action='store', type=float, dest='height', default=50, help='Height of Box')
       self.arg_parser.add_argument('--tab', action='store', type=float, dest='tab', default=6.0 , help='Nominal Tab Width')
       self.arg_parser.add_argument('--equal', action='store', type=int, dest='equal', default=0, help='Equal/Prop Tabs')
-      self.arg_parser.add_argument('--hairline', action='store', type=str, dest='hairline', default=0, help='Line Thickness')
+      self.arg_parser.add_argument('--hairline', action='store', type=str, dest='hairline', default='1.0mm', help='Line Thickness')
       self.arg_parser.add_argument('--thickness', action='store', type=float, dest='thickness', default=3.0, help='Thickness of Material')
       self.arg_parser.add_argument('--kerf', action='store', type=float, dest='kerf', default=0.5, help='Kerf (width) of cut')
       self.arg_parser.add_argument('--clearance', action='store', type=float, dest='clearance', default=0.01, help='Clearance of joints')
@@ -251,6 +255,7 @@ class BoxMaker(inkex.Effect):
       self.arg_parser.add_argument('--div_w', action='store', type=int, dest='div_w', default=3, help='Dividers (Width axis)')
       self.arg_parser.add_argument('--keydiv', action='store', type=int, dest='keydiv', default=3, help='Key dividers into walls/floor')
       self.arg_parser.add_argument('--spacing', action='store', type=float, dest='spacing', default=25, help='Part Spacing')
+      self.arg_parser.add_argument('--inside', action='store', type=bool, dest='inside', default=0, help='Are specified dimensions internal or external')
 
   def effect(self):
     global parent, nomTab, equalTabs, materialThickness, correction, divx, divy, hairline, linethickness, keydivwalls, keydivfloor, hp
@@ -277,7 +282,8 @@ class BoxMaker(inkex.Effect):
 
     # Set the line thickness
     linethickness=self.svg.unittouu(hairline)
-        
+    debug("Hairline %s linethickness %d " % (hairline, linethickness))
+      
     if schroff:
         hp=self.options.hp
         rows=self.options.rows
@@ -305,6 +311,7 @@ class BoxMaker(inkex.Effect):
         Y = self.svg.unittouu( str(self.options.width) + unit )
 
     Z = self.svg.unittouu( str(self.options.height)  + unit )
+
     materialThickness = self.svg.unittouu( str(self.options.thickness)  + unit )
     nomTab = self.svg.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
@@ -324,8 +331,9 @@ class BoxMaker(inkex.Effect):
       Y += materialThickness*2
       Z += materialThickness*2
 
-    correction=kerf-clearance
+    debug("Length (X) %d Width (Y) %d Height (Z) %d" % (X, Y, Z))
 
+    correction=kerf-clearance
     # check input values mainly to avoid python errors
     # TODO restrict values to *correct* solutions
     # TODO restrict divisions to logical values
@@ -340,7 +348,8 @@ class BoxMaker(inkex.Effect):
       inkex.errormsg(localization._('Error: Tab size too large'))
       error=1
     if nomTab<materialThickness:
-      inkex.errormsg(localization._('Error: Tab size too small'))
+      debug("Nomtab %d Material thickness %d" % (nomTab, materialThickness))
+      inkex.errormsg(localization._('Error: Tab size too small '))
       error=1     
     if materialThickness==0:
       inkex.errormsg(localization._('Error: Thickness is zero'))
@@ -371,7 +380,7 @@ class BoxMaker(inkex.Effect):
       if   layout==1: # Diagramatic Layout
         pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1110,3],
                 [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1011,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2]]
+                [(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2]]
       elif layout==2: # 3 Piece Layout
         pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1101,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1110,3],
                 [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1111,1]]

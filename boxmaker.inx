@@ -7,8 +7,8 @@
   <dependency type="executable" location="extensions">inkex/transforms.py</dependency>
   <dependency type="executable" location="extensions">inkex.py</dependency>
   
-  <param name="panels" type="notebook">
-    <page name="Options" _gui-text="Options">
+  <param name="container" type="notebook">
+    <page name="options" _gui-text="Options">
       <param name="unit" _gui-text="Unit" type="optiongroup" appearance="minimal">
         <option value="mm">mm</option>
         <option value="cm">cm</option>
@@ -64,7 +64,7 @@
       <param name="inside" type="bool" _gui-text="Use internal box dimensions">false</param>
     </page>
 
-    <page name="Help" _gui-text="Help">
+    <page name="help" _gui-text="Help">
       <param name="name" type="description" appearance="header">Tabbed Box Maker</param>
       <label>Generate box plans with finger joins suitable for a laser cutter.</label>
     </page> 
