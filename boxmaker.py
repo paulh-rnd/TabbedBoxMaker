@@ -255,7 +255,7 @@ class BoxMaker(inkex.Effect):
       self.arg_parser.add_argument('--div_w', action='store', type=int, dest='div_w', default=3, help='Dividers (Width axis)')
       self.arg_parser.add_argument('--keydiv', action='store', type=int, dest='keydiv', default=3, help='Key dividers into walls/floor')
       self.arg_parser.add_argument('--spacing', action='store', type=float, dest='spacing', default=25, help='Part Spacing')
-      self.arg_parser.add_argument('--inside', action='store', type=bool, dest='inside', default=0, help='Are specified dimensions internal or external')
+      self.arg_parser.add_argument('--inside', action='store', type=inkex.Boolean, dest='inside', default=False, help='Are specified dimensions internal or external')
 
   def effect(self):
     global parent, nomTab, equalTabs, materialThickness, correction, divx, divy, hairline, linethickness, keydivwalls, keydivfloor, hp
@@ -332,6 +332,7 @@ class BoxMaker(inkex.Effect):
       Z += materialThickness*2
 
     debug("Length (X) %d Width (Y) %d Height (Z) %d" % (X, Y, Z))
+    debug("was inside %s" % (inside))
 
     correction=kerf-clearance
     # check input values mainly to avoid python errors
@@ -378,8 +379,10 @@ class BoxMaker(inkex.Effect):
     # note first two pieces in each set are the X-divider template and Y-divider template respectively
     if boxtype==2: # One side open (X,Y)
       if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1110,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1011,3],
+        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1101,2],
+                [(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1110,3],
+                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],
+                [(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1011,3],
                 [(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2]]
       elif layout==2: # 3 Piece Layout
         pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1101,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1110,3],
@@ -450,10 +453,13 @@ class BoxMaker(inkex.Effect):
       y=ys*spacing+yx*X+yy*Y+yz*Z  # root y co-ord for piece
       dx=piece[2]
       dy=piece[3]
+
       tabs=piece[4]
       a=tabs>>3&1; b=tabs>>2&1; c=tabs>>1&1; d=tabs&1 # extract tab status for each side
+
       tabbed=piece[5]
       atabs=tabbed>>3&1; btabs=tabbed>>2&1; ctabs=tabbed>>1&1; dtabs=tabbed&1 # extract tabbed flag for each side
+
       xspacing=(X-materialThickness)/(divy+1)
       yspacing=(Y-materialThickness)/(divx+1)
       xholes = 1 if piece[6]<3 else 0
@@ -491,6 +497,8 @@ class BoxMaker(inkex.Effect):
             drawCircle(rail_mount_radius, (rhx, rh1y))
             drawCircle(rail_mount_radius, (rhx, rh2y))
             rystart+=row_centre_spacing+row_spacing+rail_height
+
+
 
       # generate and draw the sides of each piece
       drawS(side((x,y),(d,a),(-b,a),atabs * (-materialThickness if a else materialThickness),dx,(1,0),a,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*atabs,yspacing,divOffset))          # side a
