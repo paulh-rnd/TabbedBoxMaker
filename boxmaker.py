@@ -245,7 +245,7 @@ class BoxMaker(inkex.Effect):
       self.arg_parser.add_argument('--depth', action='store', type=float, dest='height', default=50, help='Height of Box')
       self.arg_parser.add_argument('--tab', action='store', type=float, dest='tab', default=6.0 , help='Nominal Tab Width')
       self.arg_parser.add_argument('--equal', action='store', type=int, dest='equal', default=0, help='Equal/Prop Tabs')
-      self.arg_parser.add_argument('--hairline', action='store', type=str, dest='hairline', default='1.0mm', help='Line Thickness')
+      self.arg_parser.add_argument('--hairline', action='store', type=str, dest='hairline', default='0.5mm', help='Line Thickness')
       self.arg_parser.add_argument('--thickness', action='store', type=float, dest='thickness', default=3.0, help='Thickness of Material')
       self.arg_parser.add_argument('--kerf', action='store', type=float, dest='kerf', default=0.5, help='Kerf (width) of cut')
       self.arg_parser.add_argument('--clearance', action='store', type=float, dest='clearance', default=0.01, help='Clearance of joints')
@@ -330,6 +330,10 @@ class BoxMaker(inkex.Effect):
       X += materialThickness*2
       Y += materialThickness*2
       Z += materialThickness*2
+
+    if boxtype==2:
+      Z += materialThickness
+
 
     debug("Length (X) %d Width (Y) %d Height (Z) %d" % (X, Y, Z))
     debug("was inside %s" % (inside))
@@ -522,15 +526,19 @@ class BoxMaker(inkex.Effect):
           btabs = 0
           ctabs = 0
           dtabs = 0
+
         y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
+        
         for n in range(0,divx): # generate X dividers
           x=n*(spacing+X)  # root x co-ord for piece      
           drawS(side((x,y),(d,a),(-b,a),keydivfloor*atabs*(-materialThickness if a else materialThickness),dx,(1,0),a,1,0,0,divOffset))          # side a
           drawS(side((x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(materialThickness if keydivwalls*b else -materialThickness),dy,(0,1),b,1,divy*xholes,xspacing,divOffset))     # side b
           drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(materialThickness if c else -materialThickness),dx,(-1,0),c,1,0,0,divOffset)) # side c
           drawS(side((x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-materialThickness if d else materialThickness),dy,(0,-1),d,1,0,0,divOffset))      # side d
+      
       elif idx==1:
         y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
+        
         for n in range(0,divy): # generate Y dividers 
           x=n*(spacing+Z)  # root x co-ord for piece
           drawS(side((x,y),(d,a),(-b,a),keydivwalls*atabs*(-materialThickness if a else materialThickness),dx,(1,0),a,1,divx*yholes,yspacing,materialThickness))          # side a
