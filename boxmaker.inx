@@ -28,6 +28,12 @@
     <_option value="1">Proportional</_option>
   </param>
 
+  <param name="tabstyle" type="optiongroup" _gui-text="Tab Style" appearance="minimal">
+    <_option value="0">XY Symmetric</_option>
+    <_option value="1">Rotate Symmetric</_option>
+    <_option value="2">Antisymmetric</_option>
+  </param>
+
   <param name="dimpleheight" type="float" precision="2" min="0.0" max="10000.0"
     _gui-text="Tab Dimple Height">0.0</param>
   <param name="dimplelength" type="float" precision="2" min="0.0" max="10000.0"
@@ -42,11 +48,10 @@
   <param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Kerf (cut width)">0.1</param>
   <param name="clearance" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Joint clearance">0.01</param>
 	
-  <param name="style" _gui-text="Layout/Style" type="optiongroup" appearance="minimal">
+  <param name="style" _gui-text="Layout" type="optiongroup" appearance="minimal">
     <option value="1">Diagramatic</option>
     <option value="2">3 piece</option>
     <option value="3">Inline(compact)</option>
-    <option value="4">Diag Alternate Tabs</option>
   </param>
 
   <param name="boxtype" _gui-text="Box Type" type="optiongroup" appearance="minimal">

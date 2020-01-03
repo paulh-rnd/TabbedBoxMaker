@@ -1,6 +1,6 @@
 # BoxMaker: A free tool for creating boxes using tabbed construction
 
-_version 0.95 - 20 Apr 2017_
+_version 0.96 - 24 Apr 2017_
 
 Original box maker by Elliot White - http://www.twot.eu/111000/111000.html
 Heavily modified by Paul Hutchison
@@ -47,6 +47,12 @@ In order of appearance:
                                  equally into tabs and 'spaces' with the tabs size 
                                  greater or equal to the Tab Width setting
 
+* Tab Style - there are three styles of tabs avaiable:
+    * XY Symmetrix - each piece is symmetric in both the X and Y axes
+    * Rotate Symmetric ("waffle block") - each piece is symmetric under a 180-degree rotation
+      (and 90 degrees if that piece is square)
+    * Antisymmetric - tabs on opposite sides go in opposite directions
+
 * Tab Dimple Height - the height of the dimple to add to the side of each tab, 0 for no dimple
 
 * Tab Dimple Tip Width - the width of the tip of the dimple; dimples are trapezoid shaped with
@@ -60,13 +66,9 @@ In order of appearance:
 * Clearance - this value is subtracted from the kerf in cases where you deliberately want
              slightly slacker joints ( usually zero )
 
-* Layout/Style - { This is where additions/changes will most likely occur, also having a
-                problem with live preview: it is best to turn preview off when changing this 
-                setting }
-                this setting determines both the type of drawing produced and the way tabs
-                are used on the sides of pieces.
+* Layout - controls how the pieces are laid out in the drawing
 
-* Box style - this allows you to choose how many jointed sides you want. Options are:
+* Box Type - this allows you to choose how many jointed sides you want. Options are:
     * Fully enclosed (6 sides)
     * One side open (LxW) - one of the Length x Width panels will be omitted
     * Two sides open (LxW and LxH) - two adjacent panels will be omitted
@@ -77,8 +79,9 @@ In order of appearance:
 
 			
 * Dividers (Length axis) - use this to create additional LxH panels that mount inside the box 
-						 along the length axis and have finger joints into the side panels
-						 and slots for Width dividers to slot into
+  along the length axis and have finger joints into the side panels
+  and slots for Width dividers to slot into
+    * Note: dividers only work properly when using XY-symetric tabs
 				
 * Dividers (Width axis) - use this to create additional WxH panels that mount inside the box 
 						 along the width axis and have finger joints into the side panels
@@ -91,6 +94,8 @@ In order of appearance:
 	* All Sides
 				
 * Space Between Parts - how far apart the pieces are in the drawing produced
+
+* Live Preview - you may need to turn this off when changing tab style, box type, or layout
 
 ## Use - Schroff enclosures
 
@@ -128,3 +133,4 @@ version | Date | Notes
 0.93a | (21 Sept 2015) | Added hairline line thickness option for Epilog lasers
 0.94 | (4 Jan 2017) | Divider keying options
 0.95 | (20 Apr 2017) | Added optional dimples on tabs
+0.96 | (24 Apr 2017) | Orthogonalized box type, layout, tab style; added rotate-symmetric tabs

@@ -23,6 +23,12 @@ v0.94 - 05/01/2017 by Paul Hutchison:
 v0.95 - 2017-04-20 by Jim McBeath
  - Added optional dimples
 
+v0.96 - 2017-04-24 by Jim McBeath
+ - Refactored to make box type, tab style, and layout all orthogonal
+ - Added Tab Style option to allow creating waffle-block-style tabs
+ - Made open box size correct based on inner or outer dimension choice
+ - Fixed a few tab bugs
+
 This program is ugly software: you can clean it up yourself and/or mock it 
 under the unpublished terms of common civility.
 
@@ -39,9 +45,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-__version__ = "0.95" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
+__version__ = "0.96" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
 import os,sys,inkex,simplestyle,gettext,math
+from copy import deepcopy
 _ = gettext.gettext
 
 linethickness = 1 # default unless overridden by settings
@@ -104,12 +111,20 @@ def dimpleStr(tabVec,Vx,Vy,dirx,diry,dirxN,diryN,ddir,isTab):
 def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,numDividers,divSpacing,divOffset):
   #       root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing dividerOffset
 
-  divs=int(length/nomTab)  # divisions
-  if not divs%2: divs-=1   # make divs odd
-  divs=float(divs)
-  tabs=(divs-1)/2          # tabs for side
+  if (tabStyle==1):        # waffle-block style rotationally symmetric tabs
+      divs=int((length-2*thickness)/nomTab)  # divisions
+      if divs%2: divs+=1   # make divs even
+      divs=float(divs)
+      tabs=divs/2          # tabs for side
+  else:
+      divs=int(length/nomTab)  # divisions
+      if not divs%2: divs-=1   # make divs odd
+      divs=float(divs)
+      tabs=(divs-1)/2          # tabs for side
   
-  if equalTabs:
+  if (tabStyle==1):        # waffle-block style rotationally symmetric tabs
+    gapWidth=tabWidth=(length-2*thickness)/divs
+  elif equalTabs:
     gapWidth=tabWidth=length/divs
   else:
     tabWidth=nomTab
@@ -129,11 +144,19 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
   firstVec=0; secondVec=tabVec
   dirxN=0 if dirx else 1 # used to select operation on x or y
   diryN=0 if diry else 1
-  (Vx,Vy)=(rx+sox*thickness,ry+soy*thickness)
-  s='M '+str(Vx)+','+str(Vy)+' '
-
-  if dirxN: Vy=ry # set correct line start
-  if diryN: Vx=rx
+  if (tabStyle==1):
+      Vx = rx + (sox*thickness if dirxN else 0)
+      Vy = ry + (soy*thickness if diryN else 0)
+      s='M '+str(Vx)+','+str(Vy)+' '
+      Vx = rx+(sox if sox else dirx)*thickness
+      Vy = ry+(soy if soy else diry)*thickness
+      if dirxN: eox=0
+      if diryN: eoy=0
+  else:
+      (Vx,Vy)=(rx+sox*thickness,ry+soy*thickness)
+      s='M '+str(Vx)+','+str(Vy)+' '
+      if dirxN: Vy=ry # set correct line start for tab generation
+      if diryN: Vx=rx
 
   # generate line as tab or hole using:
   #   last co-ord:Vx,Vy ; tab dir:tabVec  ; direction:dirx,diry ; thickness:thickness
@@ -260,6 +283,8 @@ class BoxMaker(inkex.Effect):
         dest='tab',default=25,help='Nominal Tab Width')
       self.OptionParser.add_option('--equal',action='store',type='int',
         dest='equal',default=0,help='Equal/Prop Tabs')
+      self.OptionParser.add_option('--tabstyle',action='store',type='int',
+        dest='tabstyle',default=0,help='Tab style')
       self.OptionParser.add_option('--dimpleheight',action='store',type='float',
         dest='dimpleheight',default=0,help='Tab Dimple Height')
       self.OptionParser.add_option('--dimplelength',action='store',type='float',
@@ -286,7 +311,7 @@ class BoxMaker(inkex.Effect):
         dest='keydiv',default=3,help='Key dividers into walls/floor')
 
   def effect(self):
-    global parent,nomTab,equalTabs,dimpleHeight,dimpleLength,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
+    global parent,nomTab,equalTabs,tabStyle,dimpleHeight,dimpleLength,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
     
         # Get access to main SVG document element and get its dimensions.
     svg = self.document.getroot()
@@ -344,6 +369,7 @@ class BoxMaker(inkex.Effect):
     thickness = self.unittouu( str(self.options.thickness)  + unit )
     nomTab = self.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
+    tabStyle=self.options.tabstyle
     dimpleHeight=self.options.dimpleheight
     dimpleLength=self.options.dimplelength
     kerf = self.unittouu( str(self.options.kerf)  + unit )
@@ -398,80 +424,163 @@ class BoxMaker(inkex.Effect):
       error=1     
 
     if error: exit()
-   
+
+    if layout==4:       # Convert from old alt-tab spec to newer format
+      layout=1
+      if tabStyle==0:
+        tabStyle=2
+
+    # For code spacing consistenty, we use two-character abbreviations for the six box faces,
+    # where each abbreviation is the first and last letter of the face name:
+    # tp=top, bm=bottom, ft=front, bk=back, lt=left, rt=right
+
+    # Determine which faces the box has based on the box type
+    hasTp=hasBm=hasFt=hasBk=hasLt=hasRt = True
+    if   boxtype==2: hasTp=False
+    elif boxtype==3: hasTp=hasFt=False
+    elif boxtype==4: hasTp=hasFt=hasRt=False
+    elif boxtype==5: hasTp=hasBm=False
+    elif boxtype==6: hasTp=hasFt=hasBk=hasRt=False
+    # else boxtype==1, full box, has all sides
+
+    # Determine where the tabs go based on the tab style
+    if tabStyle==2:     # Antisymmetric
+      tpTabInfo=0b0110
+      bmTabInfo=0b1100
+      ltTabInfo=0b1100
+      rtTabInfo=0b0110
+      ftTabInfo=0b1100
+      bkTabInfo=0b1001
+    elif tabStyle==1:   # Rotationally symmetric (Waffle-blocks)
+      tpTabInfo=0b1111
+      bmTabInfo=0b1111
+      ltTabInfo=0b1111
+      rtTabInfo=0b1111
+      ftTabInfo=0b1111
+      bkTabInfo=0b1111
+    else:               # XY symmetric
+      tpTabInfo=0b0000
+      bmTabInfo=0b0000
+      ltTabInfo=0b1111
+      rtTabInfo=0b1111
+      ftTabInfo=0b1010
+      bkTabInfo=0b1010
+
+    def fixTabBits(tabbed, tabInfo, bit):
+        newTabbed = tabbed & ~bit
+        if inside:
+          newTabInfo = tabInfo | bit      # set bit to 1 to use tab base line
+        else:
+          newTabInfo = tabInfo & ~bit     # set bit to 0 to use tab tip line
+        return newTabbed, newTabInfo
+
+    # Update the tab bits based on which sides of the box don't exist
+    tpTabbed=bmTabbed=ltTabbed=rtTabbed=ftTabbed=bkTabbed=0b1111
+    if not hasTp:
+      bkTabbed, bkTabInfo = fixTabBits(bkTabbed, bkTabInfo, 0b0010)
+      ftTabbed, ftTabInfo = fixTabBits(ftTabbed, ftTabInfo, 0b1000)
+      ltTabbed, ltTabInfo = fixTabBits(ltTabbed, ltTabInfo, 0b0001)
+      rtTabbed, rtTabInfo = fixTabBits(rtTabbed, rtTabInfo, 0b0100)
+      tpTabbed=0
+    if not hasBm:
+      bkTabbed, bkTabInfo = fixTabBits(bkTabbed, bkTabInfo, 0b1000)
+      ftTabbed, ftTabInfo = fixTabBits(ftTabbed, ftTabInfo, 0b0010)
+      ltTabbed, ltTabInfo = fixTabBits(ltTabbed, ltTabInfo, 0b0100)
+      rtTabbed, rtTabInfo = fixTabBits(rtTabbed, rtTabInfo, 0b0001)
+      bmTabbed=0
+    if not hasFt:
+      tpTabbed, tpTabInfo = fixTabBits(tpTabbed, tpTabInfo, 0b1000)
+      bmTabbed, bmTabInfo = fixTabBits(bmTabbed, bmTabInfo, 0b1000)
+      ltTabbed, ltTabInfo = fixTabBits(ltTabbed, ltTabInfo, 0b1000)
+      rtTabbed, rtTabInfo = fixTabBits(rtTabbed, rtTabInfo, 0b1000)
+      ftTabbed=0
+    if not hasBk:
+      tpTabbed, tpTabInfo = fixTabBits(tpTabbed, tpTabInfo, 0b0010)
+      bmTabbed, bmTabInfo = fixTabBits(bmTabbed, bmTabInfo, 0b0010)
+      ltTabbed, ltTabInfo = fixTabBits(ltTabbed, ltTabInfo, 0b0010)
+      rtTabbed, rtTabInfo = fixTabBits(rtTabbed, rtTabInfo, 0b0010)
+      bkTabbed=0
+    if not hasLt:
+      tpTabbed, tpTabInfo = fixTabBits(tpTabbed, tpTabInfo, 0b0100)
+      bmTabbed, bmTabInfo = fixTabBits(bmTabbed, bmTabInfo, 0b0001)
+      bkTabbed, bkTabInfo = fixTabBits(bkTabbed, bkTabInfo, 0b0001)
+      ftTabbed, ftTabInfo = fixTabBits(ftTabbed, ftTabInfo, 0b0001)
+      ltTabbed=0
+    if not hasRt:
+      tpTabbed, tpTabInfo = fixTabBits(tpTabbed, tpTabInfo, 0b0001)
+      bmTabbed, bmTabInfo = fixTabBits(bmTabbed, bmTabInfo, 0b0100)
+      bkTabbed, bkTabInfo = fixTabBits(bkTabbed, bkTabInfo, 0b0100)
+      ftTabbed, ftTabInfo = fixTabBits(ftTabbed, ftTabInfo, 0b0100)
+      rtTabbed=0
+
+    # Layout positions are specified in a grid of rows and columns
+    row0=(1,0,0,0)      # top row
+    row1y=(2,0,1,0)     # second row, offset by Y
+    row1z=(2,0,0,1)     # second row, offset by Z
+    row2=(3,0,1,1)      # third row, always offset by Y+Z
+
+    col0=(1,0,0,0)      # left column
+    col1x=(2,1,0,0)     # second column, offset by X
+    col1z=(2,0,0,1)     # second column, offset by Z
+    col2xx=(3,2,0,0)    # third column, offset by 2*X
+    col2xz=(3,1,0,1)    # third column, offset by X+Z
+    col3xzz=(4,1,0,2)   # fourth column, offset by X+2*Z
+    col3xxz=(4,2,0,1)   # fourth column, offset by 2*X+Z
+    col4=(5,2,0,2)      # fifth column, always offset by 2*X+2*Z
+    col5=(6,3,0,2)      # sixth column, always offset by 3*X+2*Z
+
     # layout format:(rootx),(rooty),Xlength,Ylength,tabInfo,tabbed,pieceType
     # root= (spacing,X,Y,Z) * values in tuple
     # tabInfo= <abcd> 0=holes 1=tabs
     # tabbed= <abcd> 0=no tabs 1=tabs on this side
     # (sides: a=top, b=right, c=bottom, d=left)
     # pieceType: 1=XY, 2=XZ, 3=ZY
+    tpFace=1
+    bmFace=1
+    ftFace=2
+    bkFace=2
+    ltFace=3
+    rtFace=3
+
+    def reduceOffsets(aa, start, dx, dy, dz):
+      for ix in range(start+1,len(aa)):
+        (s,x,y,z) = aa[ix]
+        aa[ix] = (s-1, x-dx, y-dy, z-dz)
+
     # note first two pieces in each set are the X-divider template and Y-divider template respectively
-    if boxtype==2: # One side open (X,Y)
-      if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1110,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1011,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2]]
-      elif layout==2: # 3 Piece Layout
-        pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1101,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1110,3],
-                [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1111,1]]
-      elif layout==3: # Inline(compact) Layout
-        pieces=[[(5,2,0,2),(1,0,0,0),X,Z,0b1111,0b1101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0101,0b1110,3],
-                [(4,2,0,1),(1,0,0,0),Z,Y,0b0101,0b1011,3],[(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1],
-                [(6,3,0,2),(1,0,0,0),X,Z,0b1111,0b0111,2]]
-      elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1001,0b1101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1110,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1011,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0110,0b0000,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b0111,2]]
-    elif boxtype==3: # Two sides open (X,Y and X,Z)
-      if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],                
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0010,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1001,3]]
-      elif layout==2: # 3 Piece Layout
-        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0010,0b1101,1]]
-      elif layout==3: # Inline(compact) Layout
-        pieces=[[(2,2,0,2),(1,0,0,0),X,Z,0b1010,0b0111,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1111,0b1100,3],
-                [(2,1,0,0),(1,0,0,0),X,Y,0b0010,0b1101,1],[(4,2,0,1),(1,0,0,0),Z,Y,0b1111,0b1001,3]]
-      elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b0111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1100,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b1110,0b1101,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1001,3]]
-    elif boxtype==4: # Three sides open (X,Y, X,Z and Z,Y)
-      if layout==2: # 3 Piece Layout
-        pieces=[[(2,2,0,0),(2,0,1,0),X,Z,0b1111,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b0110,3],
-                [(2,2,0,0),(1,0,0,0),X,Y,0b1100,0b0011,1]]
-      else:
-        pieces=[[(3,3,0,0),(1,0,0,0),X,Z,0b1110,0b1001,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b0110,3],
-                [(2,2,0,0),(1,0,0,0),X,Y,0b1100,0b0011,1]]
-    elif boxtype==5: # Opposite ends open (X,Y)
-      if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1010,3],
-                [(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1010,3]]
-      elif layout==2: # 2 Piece Layout
-        pieces=[[(1,0,0,1),(1,0,1,1),X,Z,0b1010,0b0101,2],[(2,1,0,1),(1,0,0,1),Z,Y,0b1111,0b1010,3]]
-      elif layout==3: # Inline(compact) Layout
-        pieces=[[(1,0,0,0),(1,0,0,0),X,Z,0b1010,0b0101,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b1111,0b1010,3],
-                [(2,1,0,0),(1,0,0,0),X,Z,0b1010,0b0101,2],[(4,2,0,1),(2,0,0,0),Z,Y,0b1111,0b1010,3]]
-      elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1011,0b0101,2],[(3,1,0,1),(2,0,0,1),Z,Y,0b0111,0b1010,3],
-                [(2,0,0,1),(1,0,0,0),X,Z,0b1110,0b0101,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1101,0b1010,3]]
-    elif boxtype==6: # 2 panels jointed (X,Y and Z,Y joined along Y)
-      pieces=[[(1,0,0,0),(1,0,0,0),X,Y,0b1011,0b0100,1],[(2,1,0,0),(1,0,0,0),Z,Y,0b1111,0b0001,3]]
-    else: # Fully enclosed
-      if   layout==1: # Diagramatic Layout
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1010,0b1111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1111,0b1111,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b0000,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b1111,0b1111,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0000,0b1111,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1010,0b1111,2]]
-      elif layout==2: # 3 Piece Layout
-        pieces=[[(2,0,0,1),(2,0,1,0),X,Z,0b1010,0b1111,2],[(1,0,0,0),(1,0,0,0),Z,Y,0b1111,0b1111,3],
-                [(2,0,0,1),(1,0,0,0),X,Y,0b0000,0b1111,1]]
-      elif layout==3: # Inline(compact) Layout
-        pieces=[[(5,2,0,2),(1,0,0,0),X,Z,0b1111,0b1111,2],[(3,2,0,0),(1,0,0,0),Z,Y,0b0101,0b1111,3],
-                [(6,3,0,2),(1,0,0,0),X,Z,0b1111,0b1111,2],[(4,2,0,1),(1,0,0,0),Z,Y,0b0101,0b1111,3],
-                [(2,1,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1],[(1,0,0,0),(1,0,0,0),X,Y,0b0000,0b1111,1]]
-      elif layout==4: # Diagramatic Layout with Alternate Tab Arrangement
-        pieces=[[(2,0,0,1),(3,0,1,1),X,Z,0b1001,0b1111,2],[(1,0,0,0),(2,0,0,1),Z,Y,0b1100,0b1111,3],
-                [(2,0,0,1),(2,0,0,1),X,Y,0b1100,0b1111,1],[(3,1,0,1),(2,0,0,1),Z,Y,0b0110,0b1111,3],
-                [(4,1,0,2),(2,0,0,1),X,Y,0b0110,0b1111,1],[(2,0,0,1),(1,0,0,0),X,Z,0b1100,0b1111,2]]
+    pieces=[]
+    if   layout==1: # Diagramatic Layout
+      rr = deepcopy([row0, row1z, row2])
+      cc = deepcopy([col0, col1z, col2xz, col3xzz])
+      if not hasFt: reduceOffsets(rr, 0, 0, 0, 1)     # remove row0, shift others up by Z
+      if not hasLt: reduceOffsets(cc, 0, 0, 0, 1)
+      if not hasRt: reduceOffsets(cc, 2, 0, 0, 1)
+      if hasBk: pieces.append([cc[1], rr[2], X,Z, bkTabInfo, bkTabbed, bkFace])
+      if hasLt: pieces.append([cc[0], rr[1], Z,Y, ltTabInfo, ltTabbed, ltFace])
+      if hasBm: pieces.append([cc[1], rr[1], X,Y, bmTabInfo, bmTabbed, bmFace])
+      if hasRt: pieces.append([cc[2], rr[1], Z,Y, rtTabInfo, rtTabbed, rtFace])
+      if hasTp: pieces.append([cc[3], rr[1], X,Y, tpTabInfo, tpTabbed, tpFace])
+      if hasFt: pieces.append([cc[1], rr[0], X,Z, ftTabInfo, ftTabbed, ftFace])
+    elif layout==2: # 3 Piece Layout
+      rr = deepcopy([row0, row1y])
+      cc = deepcopy([col0, col1z])
+      if hasBk: pieces.append([cc[1], rr[1], X,Z, bkTabInfo, bkTabbed, bkFace])
+      if hasLt: pieces.append([cc[0], rr[0], Z,Y, ltTabInfo, ltTabbed, ltFace])
+      if hasBm: pieces.append([cc[1], rr[0], X,Y, bmTabInfo, bmTabbed, bmFace])
+    elif layout==3: # Inline(compact) Layout
+      rr = deepcopy([row0])
+      cc = deepcopy([col0, col1x, col2xx, col3xxz, col4, col5])
+      if not hasTp: reduceOffsets(cc, 0, 1, 0, 0)     # remove col0, shift others left by X
+      if not hasBm: reduceOffsets(cc, 1, 1, 0, 0)
+      if not hasLt: reduceOffsets(cc, 2, 0, 0, 1)
+      if not hasRt: reduceOffsets(cc, 3, 0, 0, 1)
+      if not hasBk: reduceOffsets(cc, 4, 1, 0, 0)
+      if hasBk: pieces.append([cc[4], rr[0], X,Z, bkTabInfo, bkTabbed, bkFace])
+      if hasLt: pieces.append([cc[2], rr[0], Z,Y, ltTabInfo, ltTabbed, ltFace])
+      if hasTp: pieces.append([cc[0], rr[0], X,Y, tpTabInfo, tpTabbed, tpFace])
+      if hasBm: pieces.append([cc[1], rr[0], X,Y, bmTabInfo, bmTabbed, bmFace])
+      if hasRt: pieces.append([cc[3], rr[0], Z,Y, rtTabInfo, rtTabbed, rtFace])
+      if hasFt: pieces.append([cc[5], rr[0], X,Z, ftTabInfo, ftTabbed, ftFace])
 
     for idx, piece in enumerate(pieces): # generate and draw each piece of the box
       (xs,xx,xy,xz)=piece[0]
