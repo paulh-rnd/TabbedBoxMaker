@@ -1,6 +1,6 @@
 # BoxMaker: A free tool for creating boxes using tabbed construction
 
-_version 0.96 - 24 Apr 2017_
+_version 0.99 - 04 June 2020_
 
 Original box maker by Elliot White - http://www.twot.eu/111000/111000.html
 Heavily modified by Paul Hutchison
@@ -11,11 +11,9 @@ Heavily modified by Paul Hutchison
  The tool works by generating a drawing of the pieces of the box with the tab and hole size corrected to account for the kerf (width of cut), these pieces are composed of sides, each side being a discreet object, to move a piece in the drawing the edges need to be grouped together.
 
 ## Release Notes
- So far no serious bugs( i.e causing runtime errors ) have been found. The program works with python versions 2.6.5, 2.6.7 and 2.7.2, other version have not yet been tried except python 2.5.1 which fails with a syntax error.
+This is a major upgrade to support Inkscape v1.0. It is not fully tested and should be treated as BETA. So far no serious bugs( i.e causing runtime errors ) have been found. The program works with Python 3.x ONLY.
 
-Version 0.94 has been tried on windows XP, windows 7, Ubuntu and Mac OS X with no serious problems ( the live preview works most of the time but can be flaky).
 
- Only crude input checking has been implemented in the program but as the only output is a drawing the worst that can happen is a messed up picture ( control-Z cures that problem ).
  
 ## Donate
  Any donations will be gratefully received and help me spend more time on laser cutter tools like this:
@@ -34,36 +32,37 @@ Version 0.94 has been tried on windows XP, windows 7, Ubuntu and Mac OS X with n
 
 In order of appearance:
 
-* Unit - unit of measurement used for drawing
+* Units - unit of measurement used for drawing
 
 * Box Dimensions: Inside/Outside - whether the box dimensions are internal or external
 
 * Length; Width; Height - the box dimensions
-
-* Minimum/Preferred Tab Width - the size of the tabs used to hold the pieces together
 
 * Tab Width: Fixed/Proportional - for fixed the tab width is the value given in the Tab
                                  Width, for proportional the side of a piece is divided 
                                  equally into tabs and 'spaces' with the tabs size 
                                  greater or equal to the Tab Width setting
 
-* Tab Style - there are three styles of tabs avaiable:
+* Minimum/Preferred Tab Width - the size of the tabs used to hold the pieces together
+
+* Symmetry - there are two styles of tabs avaiable:
     * XY Symmetrix - each piece is symmetric in both the X and Y axes
     * Rotate Symmetric ("waffle block") - each piece is symmetric under a 180-degree rotation
       (and 90 degrees if that piece is square)
-    * Antisymmetric - tabs on opposite sides go in opposite directions
 
 * Tab Dimple Height - the height of the dimple to add to the side of each tab, 0 for no dimple
 
-* Tab Dimple Tip Width - the width of the tip of the dimple; dimples are trapezoid shaped with
-  45-degree sides; using a dimple tip width of 0 gives a triangular dimple
+* Tab Dimple Length - the length of the tip of the dimple; dimples are trapezoid shaped with
+  45-degree sides; using a dimple tip length of 0 gives a triangular dimple
+
+* Line Thickness - Leave this as _Default_ unless you need hairline thickness (Use for Epilog lasers)
 
 * Material Thickness - as it says
  
 * Kerf - this is the width of the cut ( e.g for 3mm acrylic on an epilog cutter this is
         approximately 0.25mm )
 
-* Clearance - this value is subtracted from the kerf in cases where you deliberately want
+* Joint Clearance - this value is subtracted from the kerf in cases where you deliberately want
              slightly slacker joints ( usually zero )
 
 * Layout - controls how the pieces are laid out in the drawing
@@ -109,16 +108,27 @@ Much the same as for regular enclosures, except some options are removed, and so
 
 * If multiple rows, inter-row spacing
 
-## Installation
-Boxmaker.inx, Schroffmaker.inx and Boxmaker.py need to be put in the inkscape extensions folder  generally in: 
+## Windows Installation
+Boxmaker.inx, Schroffmaker.inx and Boxmaker.py need to be put in the inkscape extensions folder, generally in:
 
-   `...\Inkscape\share\extensions `
+   `%APPDATA%\inkscape\extensions`
 
-or linux:
+or
+
+   `...\Inkscape\share\extensions`
+
+Inkscape will need to be restarted after you install.
+
+## Linux/Mac Installation
+Boxmaker.inx, Schroffmaker.inx and Boxmaker.py need to be put in the inkscape extensions folder, generally in:
 
    `usr/.../Inkscape/share/extensions`
 
-(NOTE: you need to make boxmaker.py executable)
+* NOTE: you need to make boxmaker.py executable, using something like this:
+
+   `chmod a+x boxmaker.py`
+
+Inkscape will need to be restarted after you install.
 
 ## Version History
 version | Date | Notes
@@ -134,3 +144,4 @@ version | Date | Notes
 0.94 | (4 Jan 2017) | Divider keying options
 0.95 | (20 Apr 2017) | Added optional dimples on tabs
 0.96 | (24 Apr 2017) | Orthogonalized box type, layout, tab style; added rotate-symmetric tabs
+0.99 | (4 June 2020) | Upgraded to support Inkscape v1.0, minor fixes and a tidy up of the parameters dialog layout

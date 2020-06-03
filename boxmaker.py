@@ -29,8 +29,11 @@ v0.96 - 2017-04-24 by Jim McBeath
  - Made open box size correct based on inner or outer dimension choice
  - Fixed a few tab bugs
 
-This program is ugly software: you can clean it up yourself and/or mock it 
-under the unpublished terms of common civility.
+v0.99 - 2020-06-01 by Paul Hutchison
+ - Preparatory release with Inkscape 1.0 compatibility upgrades (further fixes to come!)
+ - Removed Antisymmetric option as it's broken, kinda pointless and looks weird
+ - Fixed divider issues with Rotate Symmetric
+ - Made individual panels and their keyholes/slots grouped
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -45,7 +48,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-__version__ = "0.96" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
+__version__ = "0.99" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
 import os,sys,inkex,simplestyle,gettext,math
 from copy import deepcopy
@@ -58,77 +61,89 @@ def log(text):
     f = open(os.environ.get('SCHROFF_LOG'), 'a')
     f.write(text + "\n")
 
-
-def drawS(XYstring):         # Draw lines from a list
-  name='part'
-  style = { 'stroke': '#000000', 'stroke-width'  : str(linethickness), 'fill': 'none' }
-  drw = {'style':simplestyle.formatStyle(style),inkex.addNS('label','inkscape'):name,'d':XYstring}
-  inkex.etree.SubElement(parent, inkex.addNS('path','svg'), drw )
-  return
+def newGroup(canvas):
+  # Create a new group and add element created from line string
+  panelId = canvas.svg.get_unique_id('panel')
+  group = canvas.svg.get_current_layer().add(inkex.Group(id=panelId))
+  return group
+  
+def getLine(XYstring):
+  line = inkex.PathElement()
+  line.style = { 'stroke': '#000000', 'stroke-width'  : str(linethickness), 'fill': 'none' }
+  line.path = XYstring
+  #inkex.etree.SubElement(parent, inkex.addNS('path','svg'), drw)
+  return line
 
 # jslee - shamelessly adapted from sample code on below Inkscape wiki page 2015-07-28
 # http://wiki.inkscape.org/wiki/index.php/Generating_objects_from_extensions
-def drawCircle(r, (cx, cy)):
+def getCircle(r, c):
+    (cx, cy) = c
     log("putting circle at (%d,%d)" % (cx,cy))
-    style = { 'stroke': '#000000', 'stroke-width': str(linethickness), 'fill': 'none' }
-    ell_attribs = {'style':simplestyle.formatStyle(style),
-        inkex.addNS('cx','sodipodi')        :str(cx),
-        inkex.addNS('cy','sodipodi')        :str(cy),
-        inkex.addNS('rx','sodipodi')        :str(r),
-        inkex.addNS('ry','sodipodi')        :str(r),
-        inkex.addNS('start','sodipodi')     :str(0),
-        inkex.addNS('end','sodipodi')       :str(2*math.pi),
-        inkex.addNS('open','sodipodi')      :'true', #all ellipse sectors we will draw are open
-        inkex.addNS('type','sodipodi')      :'arc',
-        'transform'                         :'' }
-    inkex.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
+    circle = inkex.PathElement.arc((cx, cy), r)
+    circle.style = { 'stroke': '#000000', 'stroke-width': str(linethickness), 'fill': 'none' }
 
-def dimpleStr(tabVec,Vx,Vy,dirx,diry,dirxN,diryN,ddir,isTab):
+    # ell_attribs = {'style':simplestyle.formatStyle(style),
+    #     inkex.addNS('cx','sodipodi')        :str(cx),
+    #     inkex.addNS('cy','sodipodi')        :str(cy),
+    #     inkex.addNS('rx','sodipodi')        :str(r),
+    #     inkex.addNS('ry','sodipodi')        :str(r),
+    #     inkex.addNS('start','sodipodi')     :str(0),
+    #     inkex.addNS('end','sodipodi')       :str(2*math.pi),
+    #     inkex.addNS('open','sodipodi')      :'true', #all ellipse sectors we will draw are open
+    #     inkex.addNS('type','sodipodi')      :'arc',
+    #     'transform'                         :'' }
+    #inkex.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
+    return circle
+
+def dimpleStr(tabVector,vectorX,vectorY,directionX,directionY,dirxN,diryN,ddir,isTab):
   ds=''
   if not isTab:
-    ddir = -ddir;
-  if dimpleHeight>0 and tabVec!=0:
-    if tabVec>0:
-      dimpleStart=(tabVec-dimpleLength)/2-dimpleHeight
+    ddir = -ddir
+  if dimpleHeight>0 and tabVector!=0:
+    if tabVector>0:
+      dimpleStart=(tabVector-dimpleLength)/2-dimpleHeight
       tabSgn=1
     else:
-      dimpleStart=(tabVec+dimpleLength)/2+dimpleHeight
+      dimpleStart=(tabVector+dimpleLength)/2+dimpleHeight
       tabSgn=-1
-    Vxd=Vx+dirxN*dimpleStart
-    Vyd=Vy+diryN*dimpleStart
+    Vxd=vectorX+dirxN*dimpleStart
+    Vyd=vectorY+diryN*dimpleStart
     ds+='L '+str(Vxd)+','+str(Vyd)+' '
-    Vxd=Vxd+(tabSgn*dirxN-ddir*dirx)*dimpleHeight
-    Vyd=Vyd+(tabSgn*diryN-ddir*diry)*dimpleHeight
+    Vxd=Vxd+(tabSgn*dirxN-ddir*directionX)*dimpleHeight
+    Vyd=Vyd+(tabSgn*diryN-ddir*directionY)*dimpleHeight
     ds+='L '+str(Vxd)+','+str(Vyd)+' '
     Vxd=Vxd+tabSgn*dirxN*dimpleLength
     Vyd=Vyd+tabSgn*diryN*dimpleLength
     ds+='L '+str(Vxd)+','+str(Vyd)+' '
-    Vxd=Vxd+(tabSgn*dirxN+ddir*dirx)*dimpleHeight
-    Vyd=Vyd+(tabSgn*diryN+ddir*diry)*dimpleHeight
+    Vxd=Vxd+(tabSgn*dirxN+ddir*directionX)*dimpleHeight
+    Vyd=Vyd+(tabSgn*diryN+ddir*directionY)*dimpleHeight
     ds+='L '+str(Vxd)+','+str(Vyd)+' '
-  return ds;
+  return ds
 
-def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,numDividers,divSpacing,divOffset):
-  #       root startOffset endOffset tabVec length  direction  isTab isDivider numDividers divSpacing dividerOffset
+def side(group,root,startOffset,endOffset,tabVec,length,direction,isTab,isDivider,numDividers,dividerSpacing):
+  rootX, rootY = root
+  startOffsetX, startOffsetY = startOffset
+  endOffsetX, endOffsetY = endOffset
+  directionX, directionY = direction
 
-  if (tabStyle==1):        # waffle-block style rotationally symmetric tabs
-      divs=int((length-2*thickness)/nomTab)  # divisions
-      if divs%2: divs+=1   # make divs even
-      divs=float(divs)
-      tabs=divs/2          # tabs for side
+  if (tabSymmetry==1):        # waffle-block style rotationally symmetric tabs
+      divisions=int((length-2*thickness)/nomTab)
+      if divisions%2: divisions+=1      # make divs even
+      divisions=float(divisions)
+      tabs=divisions/2                  # tabs for side
   else:
-      divs=int(length/nomTab)  # divisions
-      if not divs%2: divs-=1   # make divs odd
-      divs=float(divs)
-      tabs=(divs-1)/2          # tabs for side
+      divisions=int(length/nomTab)
+      if not divisions%2: divisions-=1  # make divs odd
+      divisions=float(divisions)
+      tabs=(divisions-1)/2              # tabs for side
   
-  if (tabStyle==1):        # waffle-block style rotationally symmetric tabs
-    gapWidth=tabWidth=(length-2*thickness)/divs
+  if (tabSymmetry==1):        # waffle-block style rotationally symmetric tabs
+    gapWidth=tabWidth=(length-2*thickness)/divisions
   elif equalTabs:
-    gapWidth=tabWidth=length/divs
+    gapWidth=tabWidth=length/divisions
   else:
     tabWidth=nomTab
-    gapWidth=(length-tabs*nomTab)/(divs-tabs)
+    gapWidth=(length-tabs*nomTab)/(divisions-tabs)
     
   if isTab:                 # kerf correction
     gapWidth-=correction
@@ -142,111 +157,117 @@ def side((rx,ry),(sox,soy),(eox,eoy),tabVec,length,(dirx,diry),isTab,isDivider,n
   s=[] 
   h=[]
   firstVec=0; secondVec=tabVec
-  dirxN=0 if dirx else 1 # used to select operation on x or y
-  diryN=0 if diry else 1
-  if (tabStyle==1):
-      Vx = rx + (sox*thickness if dirxN else 0)
-      Vy = ry + (soy*thickness if diryN else 0)
-      s='M '+str(Vx)+','+str(Vy)+' '
-      Vx = rx+(sox if sox else dirx)*thickness
-      Vy = ry+(soy if soy else diry)*thickness
-      if dirxN: eox=0
-      if diryN: eoy=0
+  dividerEdgeOffsetX = dividerEdgeOffsetY = thickness
+  dirxN=0 if directionX else 1 # used to select operation on x or y
+  diryN=0 if directionY else 1
+  if (tabSymmetry==1):
+    dividerEdgeOffsetX = directionX*thickness;
+    #dividerEdgeOffsetY = ;
+    vectorX = rootX + (startOffsetX*thickness if dirxN else 0)
+    vectorY = rootY + (startOffsetY*thickness if diryN else 0)
+    s='M '+str(vectorX)+','+str(vectorY)+' '
+    vectorX = rootX+(startOffsetX if startOffsetX else directionX)*thickness
+    vectorY = rootY+(startOffsetY if startOffsetY else directionY)*thickness
+    if dirxN: endOffsetX=0
+    if diryN: endOffsetY=0
   else:
-      (Vx,Vy)=(rx+sox*thickness,ry+soy*thickness)
-      s='M '+str(Vx)+','+str(Vy)+' '
-      if dirxN: Vy=ry # set correct line start for tab generation
-      if diryN: Vx=rx
+    (vectorX,vectorY)=(rootX+startOffsetX*thickness,rootY+startOffsetY*thickness)
+    dividerEdgeOffsetX=directionY*thickness
+    dividerEdgeOffsetY=directionX*thickness
+    s='M '+str(vectorX)+','+str(vectorY)+' '
+    if dirxN: vectorY=rootY # set correct line start for tab generation
+    if diryN: vectorX=rootX
 
   # generate line as tab or hole using:
   #   last co-ord:Vx,Vy ; tab dir:tabVec  ; direction:dirx,diry ; thickness:thickness
   #   divisions:divs ; gap width:gapWidth ; tab width:tabWidth
 
-  for n in range(1,int(divs)):
+  for n in range(1,int(divisions)):
     if ((n%2) ^ (not isTab)) and numDividers>0 and not isDivider: # draw holes for divider joints in side walls
       w=gapWidth if isTab else tabWidth
-      if n==1:
-        w-=sox*thickness
+      if n==1 and tabSymmetry==0:
+        w-=startOffsetX*thickness
       for m in range(1,int(numDividers)+1):
-        Dx=Vx+-diry*divSpacing*m
-        Dy=Vy+dirx*divSpacing*m
-        if n==1:
-          Dx+=sox*thickness
+        Dx=vectorX+-directionY*dividerSpacing*m
+        Dy=vectorY+directionX*dividerSpacing*m
+        if n==1 and tabSymmetry==0:
+          Dx+=startOffsetX*thickness
         h='M '+str(Dx)+','+str(Dy)+' '
-        Dx=Dx+dirx*w+dirxN*firstVec+first*dirx
-        Dy=Dy+diry*w+diryN*firstVec+first*diry
+        Dx=Dx+directionX*w+dirxN*firstVec+first*directionX
+        Dy=Dy+directionY*w+diryN*firstVec+first*directionY
         h+='L '+str(Dx)+','+str(Dy)+' '
         Dx=Dx+dirxN*secondVec
         Dy=Dy+diryN*secondVec
         h+='L '+str(Dx)+','+str(Dy)+' '
-        Dx=Dx-(dirx*w+dirxN*firstVec+first*dirx)
-        Dy=Dy-(diry*w+diryN*firstVec+first*diry)
+        Dx=Dx-(directionX*w+dirxN*firstVec+first*directionX)
+        Dy=Dy-(directionY*w+diryN*firstVec+first*directionY)
         h+='L '+str(Dx)+','+str(Dy)+' '
         Dx=Dx-dirxN*secondVec
         Dy=Dy-diryN*secondVec
         h+='L '+str(Dx)+','+str(Dy)+' '
-        drawS(h)
+        group.add(getLine(h))
     if n%2:
       if n==1 and numDividers>0 and isDivider: # draw slots for dividers to slot into each other
         for m in range(1,int(numDividers)+1):
-          Dx=Vx+-diry*(divSpacing*m+divOffset)
-          Dy=Vy+dirx*(divSpacing*m-divOffset)
+          Dx=vectorX+-directionY*dividerSpacing*m-dividerEdgeOffsetX
+          Dy=vectorY+directionX*dividerSpacing*m-dividerEdgeOffsetY
           h='M '+str(Dx)+','+str(Dy)+' '
-          Dx=Dx+dirx*(first+length/2)
-          Dy=Dy+diry*(first+length/2)
+          Dx=Dx+directionX*(first+length/2)
+          Dy=Dy+directionY*(first+length/2)
           h+='L '+str(Dx)+','+str(Dy)+' '
           Dx=Dx+dirxN*thickness
           Dy=Dy+diryN*thickness
           h+='L '+str(Dx)+','+str(Dy)+' '
-          Dx=Dx-dirx*(first+length/2)
-          Dy=Dy-diry*(first+length/2)
+          Dx=Dx-directionX*(first+length/2)
+          Dy=Dy-directionY*(first+length/2)
           h+='L '+str(Dx)+','+str(Dy)+' '
           Dx=Dx-dirxN*thickness
           Dy=Dy-diryN*thickness
           h+='L '+str(Dx)+','+str(Dy)+' '
-          drawS(h)
+          group.add(getLine(h))
       # draw the gap
-      Vx=Vx+dirx*gapWidth+dirxN*firstVec+first*dirx
-      Vy=Vy+diry*gapWidth+diryN*firstVec+first*diry
-      s+='L '+str(Vx)+','+str(Vy)+' '
+      vectorX=vectorX+directionX*gapWidth+dirxN*firstVec+first*directionX
+      vectorY=vectorY+directionY*gapWidth+diryN*firstVec+first*directionY
+      s+='L '+str(vectorX)+','+str(vectorY)+' '
       # draw the starting edge of the tab
-      s+=dimpleStr(secondVec,Vx,Vy,dirx,diry,dirxN,diryN,1,isTab)
-      Vx=Vx+dirxN*secondVec
-      Vy=Vy+diryN*secondVec
-      s+='L '+str(Vx)+','+str(Vy)+' '
+      s+=dimpleStr(secondVec,vectorX,vectorY,directionX,directionY,dirxN,diryN,1,isTab)
+      vectorX=vectorX+dirxN*secondVec
+      vectorY=vectorY+diryN*secondVec
+      s+='L '+str(vectorX)+','+str(vectorY)+' '
     else:
       # draw the tab
-      Vx=Vx+dirx*tabWidth+dirxN*firstVec
-      Vy=Vy+diry*tabWidth+diryN*firstVec
-      s+='L '+str(Vx)+','+str(Vy)+' '
+      vectorX=vectorX+directionX*tabWidth+dirxN*firstVec
+      vectorY=vectorY+directionY*tabWidth+diryN*firstVec
+      s+='L '+str(vectorX)+','+str(vectorY)+' '
       # draw the ending edge of the tab
-      s+=dimpleStr(secondVec,Vx,Vy,dirx,diry,dirxN,diryN,-1,isTab)
-      Vx=Vx+dirxN*secondVec
-      Vy=Vy+diryN*secondVec
-      s+='L '+str(Vx)+','+str(Vy)+' '
+      s+=dimpleStr(secondVec,vectorX,vectorY,directionX,directionY,dirxN,diryN,-1,isTab)
+      vectorX=vectorX+dirxN*secondVec
+      vectorY=vectorY+diryN*secondVec
+      s+='L '+str(vectorX)+','+str(vectorY)+' '
     (secondVec,firstVec)=(-secondVec,-firstVec) # swap tab direction
     first=0
     
   #finish the line off
-  s+='L '+str(rx+eox*thickness+dirx*length)+','+str(ry+eoy*thickness+diry*length)+' '
-  if isTab and numDividers>0 and not isDivider: # draw last for divider joints in side walls
+  s+='L '+str(rootX+endOffsetX*thickness+directionX*length)+','+str(rootY+endOffsetY*thickness+directionY*length)+' '
+  if isTab and numDividers>0 and tabSymmetry==0 and not isDivider: # draw last for divider joints in side walls
     for m in range(1,int(numDividers)+1):
-      Dx=Vx
-      Dy=Vy+dirx*divSpacing*m
+      Dx=vectorX
+      Dy=vectorY+directionX*dividerSpacing*m
       h='M '+str(Dx)+','+str(Dy)+' '
-      Dx=rx+eox*thickness+dirx*length
-      Dy=Dy+diry*tabWidth+diryN*firstVec+first*diry
+      Dx=rootX+endOffsetX*thickness+directionX*length
+      Dy=Dy+directionY*tabWidth+diryN*firstVec+first*directionY
       h+='L '+str(Dx)+','+str(Dy)+' '
       Dx=Dx+dirxN*secondVec
       Dy=Dy+diryN*secondVec
       h+='L '+str(Dx)+','+str(Dy)+' '
-      Dx=Vx
-      Dy=Dy-(diry*tabWidth+diryN*firstVec+first*diry)
+      Dx=vectorX
+      Dy=Dy-(directionY*tabWidth+diryN*firstVec+first*directionY)
       h+='L '+str(Dx)+','+str(Dy)+' '
       Dx=Dx-dirxN*secondVec
       Dy=Dy-diryN*secondVec
       h+='L '+str(Dx)+','+str(Dy)+' '
-      drawS(h)
+      group.add(getLine(h))
+  group.add(getLine(s))
   return s
 
   
@@ -255,77 +276,70 @@ class BoxMaker(inkex.Effect):
       # Call the base class constructor.
       inkex.Effect.__init__(self)
       # Define options
-      self.OptionParser.add_option('--schroff',action='store',type='int',
+      self.arg_parser.add_argument('--schroff',action='store',type=int,
         dest='schroff',default=0,help='Enable Schroff mode')
-      self.OptionParser.add_option('--rail_height',action='store',type='float',
+      self.arg_parser.add_argument('--rail_height',action='store',type=float,
         dest='rail_height',default=10.0,help='Height of rail')
-      self.OptionParser.add_option('--rail_mount_depth',action='store',type='float',
+      self.arg_parser.add_argument('--rail_mount_depth',action='store',type=float,
         dest='rail_mount_depth',default=17.4,help='Depth at which to place hole for rail mount bolt')
-      self.OptionParser.add_option('--rail_mount_centre_offset',action='store',type='float',
+      self.arg_parser.add_argument('--rail_mount_centre_offset',action='store',type=float,
         dest='rail_mount_centre_offset',default=0.0,help='How far toward row centreline to offset rail mount bolt (from rail centreline)')
-      self.OptionParser.add_option('--rows',action='store',type='int',
+      self.arg_parser.add_argument('--rows',action='store',type=int,
         dest='rows',default=0,help='Number of Schroff rows')
-      self.OptionParser.add_option('--hp',action='store',type='int',
+      self.arg_parser.add_argument('--hp',action='store',type=int,
         dest='hp',default=0,help='Width (TE/HP units) of Schroff rows')
-      self.OptionParser.add_option('--row_spacing',action='store',type='float',
+      self.arg_parser.add_argument('--row_spacing',action='store',type=float,
         dest='row_spacing',default=10.0,help='Height of rail')
-      self.OptionParser.add_option('--unit',action='store',type='string',
+      self.arg_parser.add_argument('--unit',action='store',type=str,
         dest='unit',default='mm',help='Measure Units')
-      self.OptionParser.add_option('--inside',action='store',type='int',
+      self.arg_parser.add_argument('--inside',action='store',type=int,
         dest='inside',default=0,help='Int/Ext Dimension')
-      self.OptionParser.add_option('--length',action='store',type='float',
+      self.arg_parser.add_argument('--length',action='store',type=float,
         dest='length',default=100,help='Length of Box')
-      self.OptionParser.add_option('--width',action='store',type='float',
+      self.arg_parser.add_argument('--width',action='store',type=float,
         dest='width',default=100,help='Width of Box')
-      self.OptionParser.add_option('--depth',action='store',type='float',
+      self.arg_parser.add_argument('--depth',action='store',type=float,
         dest='height',default=100,help='Height of Box')
-      self.OptionParser.add_option('--tab',action='store',type='float',
+      self.arg_parser.add_argument('--tab',action='store',type=float,
         dest='tab',default=25,help='Nominal Tab Width')
-      self.OptionParser.add_option('--equal',action='store',type='int',
+      self.arg_parser.add_argument('--equal',action='store',type=int,
         dest='equal',default=0,help='Equal/Prop Tabs')
-      self.OptionParser.add_option('--tabstyle',action='store',type='int',
-        dest='tabstyle',default=0,help='Tab style')
-      self.OptionParser.add_option('--dimpleheight',action='store',type='float',
+      self.arg_parser.add_argument('--tabsymmetry',action='store',type=int,
+        dest='tabsymmetry',default=0,help='Tab style')
+      self.arg_parser.add_argument('--dimpleheight',action='store',type=float,
         dest='dimpleheight',default=0,help='Tab Dimple Height')
-      self.OptionParser.add_option('--dimplelength',action='store',type='float',
+      self.arg_parser.add_argument('--dimplelength',action='store',type=float,
         dest='dimplelength',default=0,help='Tab Dimple Tip Length')
-      self.OptionParser.add_option('--hairline',action='store',type='int',
+      self.arg_parser.add_argument('--hairline',action='store',type=int,
         dest='hairline',default=0,help='Line Thickness')
-      self.OptionParser.add_option('--thickness',action='store',type='float',
+      self.arg_parser.add_argument('--thickness',action='store',type=float,
         dest='thickness',default=10,help='Thickness of Material')
-      self.OptionParser.add_option('--kerf',action='store',type='float',
+      self.arg_parser.add_argument('--kerf',action='store',type=float,
         dest='kerf',default=0.5,help='Kerf (width) of cut')
-      self.OptionParser.add_option('--clearance',action='store',type='float',
+      self.arg_parser.add_argument('--clearance',action='store',type=float,
         dest='clearance',default=0.01,help='Clearance of joints')
-      self.OptionParser.add_option('--style',action='store',type='int',
+      self.arg_parser.add_argument('--style',action='store',type=int,
         dest='style',default=25,help='Layout/Style')
-      self.OptionParser.add_option('--spacing',action='store',type='float',
+      self.arg_parser.add_argument('--spacing',action='store',type=float,
         dest='spacing',default=25,help='Part Spacing')
-      self.OptionParser.add_option('--boxtype',action='store',type='int',
+      self.arg_parser.add_argument('--boxtype',action='store',type=int,
         dest='boxtype',default=25,help='Box type')
-      self.OptionParser.add_option('--div_l',action='store',type='int',
+      self.arg_parser.add_argument('--div_l',action='store',type=int,
         dest='div_l',default=25,help='Dividers (Length axis)')
-      self.OptionParser.add_option('--div_w',action='store',type='int',
+      self.arg_parser.add_argument('--div_w',action='store',type=int,
         dest='div_w',default=25,help='Dividers (Width axis)')
-      self.OptionParser.add_option('--keydiv',action='store',type='int',
+      self.arg_parser.add_argument('--keydiv',action='store',type=int,
         dest='keydiv',default=3,help='Key dividers into walls/floor')
 
   def effect(self):
-    global parent,nomTab,equalTabs,tabStyle,dimpleHeight,dimpleLength,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
+    global group,nomTab,equalTabs,tabSymmetry,dimpleHeight,dimpleLength,thickness,correction,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
     
         # Get access to main SVG document element and get its dimensions.
     svg = self.document.getroot()
     
         # Get the attributes:
-    widthDoc  = self.unittouu(svg.get('width'))
-    heightDoc = self.unittouu(svg.get('height'))
-
-        # Create a new layer.
-    layer = inkex.etree.SubElement(svg, 'g')
-    layer.set(inkex.addNS('label', 'inkscape'), 'newlayer')
-    layer.set(inkex.addNS('groupmode', 'inkscape'), 'layer')
-    
-    parent=self.current_layer
+    widthDoc  = self.svg.unittouu(svg.get('width'))
+    heightDoc = self.svg.unittouu(svg.get('height'))
     
     # Get script's option values.
     hairline=self.options.hairline
@@ -335,26 +349,25 @@ class BoxMaker(inkex.Effect):
 
     # Set the line thickness
     if hairline:
-        linethickness=self.unittouu('0.002in')
+        linethickness=self.svg.unittouu('0.002in')
     else:
         linethickness=1
         
     if schroff:
-        hp=self.options.hp
         rows=self.options.rows
-        rail_height=self.unittouu(str(self.options.rail_height)+unit)
-        row_centre_spacing=self.unittouu(str(122.5)+unit)
-        row_spacing=self.unittouu(str(self.options.row_spacing)+unit)
-        rail_mount_depth=self.unittouu(str(self.options.rail_mount_depth)+unit)
-        rail_mount_centre_offset=self.unittouu(str(self.options.rail_mount_centre_offset)+unit)
-        rail_mount_radius=self.unittouu(str(2.5)+unit)
+        rail_height=self.svg.unittouu(str(self.options.rail_height)+unit)
+        row_centre_spacing=self.svg.unittouu(str(122.5)+unit)
+        row_spacing=self.svg.unittouu(str(self.options.row_spacing)+unit)
+        rail_mount_depth=self.svg.unittouu(str(self.options.rail_mount_depth)+unit)
+        rail_mount_centre_offset=self.svg.unittouu(str(self.options.rail_mount_centre_offset)+unit)
+        rail_mount_radius=self.svg.unittouu(str(2.5)+unit)
     
     ## minimally different behaviour for schroffmaker.inx vs. boxmaker.inx
     ## essentially schroffmaker.inx is just an alternate interface with different
     ## default settings, some options removed, and a tiny amount of extra logic
     if schroff:
         ## schroffmaker.inx
-        X = self.unittouu(str(self.options.hp * 5.08) + unit)
+        X = self.svg.unittouu(str(self.options.hp * 5.08) + unit)
         # 122.5mm vertical distance between mounting hole centres of 3U Schroff panels
         row_height = rows * (row_centre_spacing + rail_height)
         # rail spacing in between rows but never between rows and case panels
@@ -362,26 +375,25 @@ class BoxMaker(inkex.Effect):
         Y = row_height + row_spacing_total
     else:
         ## boxmaker.inx
-        X = self.unittouu( str(self.options.length)  + unit )
-        Y = self.unittouu( str(self.options.width) + unit )
+        X = self.svg.unittouu( str(self.options.length)  + unit )
+        Y = self.svg.unittouu( str(self.options.width) + unit )
 
-    Z = self.unittouu( str(self.options.height)  + unit )
-    thickness = self.unittouu( str(self.options.thickness)  + unit )
-    nomTab = self.unittouu( str(self.options.tab) + unit )
+    Z = self.svg.unittouu( str(self.options.height)  + unit )
+    thickness = self.svg.unittouu( str(self.options.thickness)  + unit )
+    nomTab = self.svg.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
-    tabStyle=self.options.tabstyle
+    tabSymmetry=self.options.tabsymmetry
     dimpleHeight=self.options.dimpleheight
     dimpleLength=self.options.dimplelength
-    kerf = self.unittouu( str(self.options.kerf)  + unit )
-    clearance = self.unittouu( str(self.options.clearance)  + unit )
+    kerf = self.svg.unittouu( str(self.options.kerf)  + unit )
+    clearance = self.svg.unittouu( str(self.options.clearance)  + unit )
     layout=self.options.style
-    spacing = self.unittouu( str(self.options.spacing)  + unit )
+    spacing = self.svg.unittouu( str(self.options.spacing)  + unit )
     boxtype = self.options.boxtype
     divx = self.options.div_l
     divy = self.options.div_w
     keydivwalls = 0 if self.options.keydiv == 3 or self.options.keydiv == 1 else 1
     keydivfloor = 0 if self.options.keydiv == 3 or self.options.keydiv == 2 else 1
-    divOffset = keydivwalls*thickness
         
     if inside: # if inside dimension selected correct values to outside dimension
       X+=thickness*2
@@ -425,12 +437,7 @@ class BoxMaker(inkex.Effect):
 
     if error: exit()
 
-    if layout==4:       # Convert from old alt-tab spec to newer format
-      layout=1
-      if tabStyle==0:
-        tabStyle=2
-
-    # For code spacing consistenty, we use two-character abbreviations for the six box faces,
+    # For code spacing consistency, we use two-character abbreviations for the six box faces,
     # where each abbreviation is the first and last letter of the face name:
     # tp=top, bm=bottom, ft=front, bk=back, lt=left, rt=right
 
@@ -444,14 +451,14 @@ class BoxMaker(inkex.Effect):
     # else boxtype==1, full box, has all sides
 
     # Determine where the tabs go based on the tab style
-    if tabStyle==2:     # Antisymmetric
+    if tabSymmetry==2:     # Antisymmetric (deprecated)
       tpTabInfo=0b0110
       bmTabInfo=0b1100
       ltTabInfo=0b1100
       rtTabInfo=0b0110
       ftTabInfo=0b1100
       bkTabInfo=0b1001
-    elif tabStyle==1:   # Rotationally symmetric (Waffle-blocks)
+    elif tabSymmetry==1:   # Rotationally symmetric (Waffle-blocks)
       tpTabInfo=0b1111
       bmTabInfo=0b1111
       ltTabInfo=0b1111
@@ -601,6 +608,8 @@ class BoxMaker(inkex.Effect):
       floor = 1 if piece[6]==1 else 0
       railholes = 1 if piece[6]==3 else 0
 
+      group = newGroup(self)
+      
       if schroff and railholes:
         log("rail holes enabled on piece %d at (%d, %d)" % (idx, x+thickness,y+thickness))
         log("abcd = (%d,%d,%d,%d)" % (a,b,c,d))
@@ -618,8 +627,8 @@ class BoxMaker(inkex.Effect):
           log("just one row this time, rystart = %d" % rystart)
           rh1y=rystart+rail_mount_centre_offset
           rh2y=rh1y+(row_centre_spacing-rail_mount_centre_offset)
-          drawCircle(rail_mount_radius,(rhx,rh1y))
-          drawCircle(rail_mount_radius,(rhx,rh2y))
+          group.add(getCircle(rail_mount_radius,(rhx,rh1y)))
+          group.add(getCircle(rail_mount_radius,(rhx,rh2y)))
         else:
           for n in range(0,rows):
             log("drawing row %d, rystart = %d" % (n+1, rystart))
@@ -627,48 +636,44 @@ class BoxMaker(inkex.Effect):
             # toward each other, ie. toward the centreline of the Schroff row
             rh1y=rystart+rail_mount_centre_offset
             rh2y=rh1y+row_centre_spacing-rail_mount_centre_offset
-            drawCircle(rail_mount_radius,(rhx,rh1y))
-            drawCircle(rail_mount_radius,(rhx,rh2y))
+            group.add(getCircle(rail_mount_radius,(rhx,rh1y)))
+            group.add(getCircle(rail_mount_radius,(rhx,rh2y)))
             rystart+=row_centre_spacing+row_spacing+rail_height
 
       # generate and draw the sides of each piece
-      drawS(side((x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*atabs,yspacing,divOffset))          # side a
-      drawS(side((x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*btabs,xspacing,divOffset))     # side b
+      side(group,(x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*atabs,yspacing)          # side a
+      side(group,(x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*btabs,xspacing)     # side b
       if atabs:
-        drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0,divOffset)) # side c
+        side(group,(x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0) # side c
       else:
-        drawS(side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*ctabs,yspacing,divOffset)) # side c
+        side(group,(x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*ctabs,yspacing) # side c
       if btabs:
-        drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0,divOffset))      # side d
+        side(group,(x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0)      # side d
       else:
-        drawS(side((x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing,divOffset))      # side d
+        side(group,(x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing)      # side d
 
       if idx==0:
         if not keydivwalls:
-          a=1;
-          b=1;
-          c=1;
-          d=1;
-          atabs=0;
-          btabs=0;
-          ctabs=0;
-          dtabs=0;
+          a=b=c=d=1
+          atabs=btabs=ctabs=dtabs=0
         y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
         for n in range(0,divx): # generate X dividers
+          group = newGroup(self)
           x=n*(spacing+X)  # root x co-ord for piece      
-          drawS(side((x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0,divOffset))          # side a
-          drawS(side((x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if keydivwalls*b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing,divOffset))     # side b
-          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,divOffset)) # side c
-          drawS(side((x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,divOffset))      # side d
+          side(group,(x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0)          # side a
+          side(group,(x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if keydivwalls*b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing)    # side b
+          side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
+          side(group,(x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
       elif idx==1:
         y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
-        for n in range(0,divy): # generate Y dividers 
+        for n in range(0,divy): # generate Y dividers
+          group = newGroup(self)
           x=n*(spacing+Z)  # root x co-ord for piece
-          drawS(side((x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,divx*yholes,yspacing,thickness))          # side a
-          drawS(side((x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0,thickness))     # side b
-          drawS(side((x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0,thickness)) # side c
-          drawS(side((x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0,thickness))      # side d
+          side(group,(x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,divx*yholes,yspacing)          # side a
+          side(group,(x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0)     # side b
+          side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
+          side(group,(x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
 
 # Create effect instance and apply it.
 effect = BoxMaker()
-effect.affect()
+effect.run()
