@@ -6,14 +6,12 @@ Original box maker by Elliot White - http://www.twot.eu/111000/111000.html
 Heavily modified by Paul Hutchison
 
 ## About
- This tool is designed to simplify and speed up process of making practical boxes using a laser cutter (though it can be used with any CNC cutter) to prepare the pieces.
+ This tool is designed to simplify and speed up process of making practical boxes using a CNC cutter (laser, plasma, water jet or mill) to prepare the pieces.
 
  The tool works by generating a drawing of the pieces of the box with the tab and hole size corrected to account for the kerf (width of cut), these pieces are composed of sides, each side being a discreet object, to move a piece in the drawing the edges need to be grouped together.
 
 ## Release Notes
-This is a major upgrade to support Inkscape v1.0. It is not fully tested and should be treated as BETA. So far no serious bugs( i.e causing runtime errors ) have been found. The program works with Python 3.x ONLY.
-
-
+This is a major upgrade to support Inkscape v1.0 and CNC mills (with dogbone cuts). It is not fully tested and should be treated as BETA. So far no serious bugs( i.e causing runtime errors ) have been found. The program works with Python 3.x ONLY.
  
 ## Donate
  Any donations will be gratefully received and help me spend more time on laser cutter tools like this:
@@ -21,22 +19,23 @@ This is a major upgrade to support Inkscape v1.0. It is not fully tested and sho
  [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.me/SparkItUp)
 
 ## To do
-* Tidy the code - it is rough and unpythonic.  Needs some work by a master Python guru.
+* Tidy, modularise and simplify the code - it is rough and unpythonic.  Needs some work by a master Python guru.
+* Add tests and perhaps get it submitted as a core extension to be installed with Inkscape?
 * Improve program documentation. Improve input checking to restrict values to correct solutions.
 * [Schroff] Maybe replace the somewhat obscure collection of Schroff rail input data with a dropdown box listing well-documented rail types (Vector, Z-rails, whatever it is that Elby sells, others?)
 * [Schroff] Add support for multiple mounting holes per rail where possible (this would definitely make the previous todo item worthwhile)
 * [Schroff] Add support for 6U row height
 
 ## Use - regular tabbed boxes
- The interface is pretty self explanatory, the extension is 'Tabbed Box Maker' in the 'Laser Tools' group ( hopefully more tools will soon{ish} join it ).
+ The interface is pretty self explanatory, the extension is 'Tabbed Box Maker' in the 'CNC Tools' group
 
 In order of appearance:
 
 * Units - unit of measurement used for drawing
 
-* Box Dimensions: Inside/Outside - whether the box dimensions are internal or external
+* Box Dimensions: Inside/Outside - whether the box dimensions are internal or external measurements
 
-* Length; Width; Height - the box dimensions
+* Length / Width / Height - the box dimensions
 
 * Tab Width: Fixed/Proportional - for fixed the tab width is the value given in the Tab
                                  Width, for proportional the side of a piece is divided 
@@ -50,7 +49,8 @@ In order of appearance:
     * Rotate Symmetric ("waffle block") - each piece is symmetric under a 180-degree rotation
       (and 90 degrees if that piece is square)
 
-* Tab Dimple Height - the height of the dimple to add to the side of each tab, 0 for no dimple
+* Tab Dimple Height - the height of the dimple to add to the side of each tab, 0 for no dimple.
+  Dimples can be added to give tabbed joints a little extra material for a tighter press fit.
 
 * Tab Dimple Length - the length of the tip of the dimple; dimples are trapezoid shaped with
   45-degree sides; using a dimple tip length of 0 gives a triangular dimple
@@ -59,11 +59,9 @@ In order of appearance:
 
 * Material Thickness - as it says
  
-* Kerf - this is the width of the cut ( e.g for 3mm acrylic on an epilog cutter this is
-        approximately 0.25mm )
-
-* Joint Clearance - this value is subtracted from the kerf in cases where you deliberately want
-             slightly slacker joints ( usually zero )
+* Kerf - this is the diameter/width of the cut. Typical laser cutters will be between 0.1 - 0.25mm, 
+  for CNC mills, this will be your end mill diameter. A larger kerf will assume more material is removed,
+  hence joints will be tighter. Smaller or zero kerf will result in looser joints.
 
 * Layout - controls how the pieces are laid out in the drawing
 
@@ -74,13 +72,10 @@ In order of appearance:
     * Three sides open (LxW, LxH, HxW) - one of each panel omitted
     * Opposite ends open (LxW) - an open-ended "tube" with the LxW panels omitted
     * Two panels only (LxW and LxH) - two panels with a single joint down the Length axis
- 
-
-			
+ 			
 * Dividers (Length axis) - use this to create additional LxH panels that mount inside the box 
   along the length axis and have finger joints into the side panels
   and slots for Width dividers to slot into
-    * Note: dividers only work properly when using XY-symetric tabs
 				
 * Dividers (Width axis) - use this to create additional WxH panels that mount inside the box 
 						 along the width axis and have finger joints into the side panels
@@ -145,3 +140,4 @@ version | Date | Notes
 0.95 | (20 Apr 2017) | Added optional dimples on tabs
 0.96 | (24 Apr 2017) | Orthogonalized box type, layout, tab style; added rotate-symmetric tabs
 0.99 | (4 June 2020) | Upgraded to support Inkscape v1.0, minor fixes and a tidy up of the parameters dialog layout
+1.0 |  (10 June 2020) | v1.0 final released: fixes and dogbone added - Mills now supported!

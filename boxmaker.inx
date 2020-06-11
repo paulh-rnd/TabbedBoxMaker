@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
-	<_name>Tabbed Box Maker</_name>
+	<_name>CNC Tabbed Box Maker</_name>
 	<id>eu.twot.render.boxmaker</id>
 
 	<dependency type="executable" location="extensions">boxmaker.py</dependency>
@@ -33,6 +33,11 @@
 
 			<param name="tab" type="float" precision="2" min="0.0" max="10000.0" _gui-text="    Min/Preferred Width">6.0</param> 
 
+			<param name="tabtype" type="optiongroup" _gui-text="    Type" appearance="combo">
+				<_option value="0">Regular (Laser)</_option>
+				<_option value="1">Dogbone (Mill)</_option>
+			</param>
+
 			<param name="tabsymmetry" type="optiongroup" _gui-text="    Symmetry" appearance="combo">
 				<_option value="0">XY Symmetric</_option>
 				<_option value="1">Rotate Symmetric</_option>
@@ -57,7 +62,6 @@
 
 			<param name="thickness" type="float" precision="2" min="0.0" max="10000.0" _gui-text="    Material Thickness">3.0</param>
 			<param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Kerf (cut width)">0.1</param>
-			<param name="clearance" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Joint clearance">0.01</param>
 
 			<spacer/>
 			<label>Layout</label>
@@ -92,7 +96,7 @@
 	<effect>
 		<object-type>all</object-type>
 		<effects-menu>
-			<submenu _name="Laser Tools" />
+			<submenu _name="CNC Tools" />
 		</effects-menu>
 	</effect>
 	<script>
