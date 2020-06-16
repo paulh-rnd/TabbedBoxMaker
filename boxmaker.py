@@ -35,7 +35,7 @@ v0.99 - 2020-06-01 by Paul Hutchison
  - Fixed divider issues with Rotate Symmetric
  - Made individual panels and their keyholes/slots grouped
 
-v1.0 - 2020-06-10 by Paul Hutchison
+v1.0 - 2020-06-17 by Paul Hutchison
  - Removed clearance parameter, as this was just subtracted from kerf - pointless?
  - Corrected kerf adjustments for overall box size and divider keyholes
  - Added dogbone cuts: CNC mills now supported!

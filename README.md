@@ -1,27 +1,32 @@
-# BoxMaker: A free tool for creating boxes using tabbed construction
+# TabbedBoxMaker: A free Inkscape extension for generating tab-jointed box patterns
 
-_version 0.99 - 04 June 2020_
+_version 1.0 - 17 June 2020_
 
-Original box maker by Elliot White - http://www.twot.eu/111000/111000.html
-Heavily modified by Paul Hutchison
+Original box maker by Elliot White (formerly of twot.eu, domain name now squatted)
+
+Heavily modified by [Paul Hutchison](https://github.com/paulh-rnd)
 
 ## About
- This tool is designed to simplify and speed up process of making practical boxes using a CNC cutter (laser, plasma, water jet or mill) to prepare the pieces.
+ This tool is designed to simplify the process of making practical boxes from sheet material using almost any kind of CNC cutter (laser, plasma, water jet or mill). The box edges are "finger-jointed" or "tab-jointed", and may include press-fit dimples, internal dividers, dogbone corners (for endmill cutting), and more.
 
- The tool works by generating a drawing of the pieces of the box with the tab and hole size corrected to account for the kerf (width of cut), these pieces are composed of sides, each side being a discreet object, to move a piece in the drawing the edges need to be grouped together.
+ The tool works by generating each side of the box with the tab and edge sizes corrected to account for the kerf (width of cut). Each box side is composed of a group of individual lines that make up each edge of the face, as well as any other cutouts for dividers. It is recommended that you join adjacent lines in your CNC software to cut efficiently.
+
+ An additional extension which uses the same TabbedBoxMaker generator script is also included: Schroff Box Maker. The Schroff addition was created by [John Slee](https://github.com/jsleeio). If you create further derivative box generators, feel free to send me a pull request!
 
 ## Release Notes
-This is a major upgrade to support Inkscape v1.0 and CNC mills (with dogbone cuts). It is not fully tested and should be treated as BETA. So far no serious bugs( i.e causing runtime errors ) have been found. The program works with Python 3.x ONLY.
+This is a major upgrade to support Inkscape v1.0 and CNC mills (with dogbone cuts), plus an updated dialog layout and documentation, and a number of smaller fixes. So far no serious bugs (i.e causing runtime errors) have been found. The program works with Python 3 ONLY. See [issues](https://github.com/paulh-rnd/TabbedBoxMaker/issues) for known issues, or to log issues and enhancement requests.
  
 ## Donate
- Any donations will be gratefully received and help me spend more time on laser cutter tools like this:
+ Any donations will be gratefully received:
 
  [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.me/SparkItUp)
+
+ Many thanks to those who have donated.
 
 ## To do
 * Tidy, modularise and simplify the code - it is rough and unpythonic.  Needs some work by a master Python guru.
 * Add tests and perhaps get it submitted as a core extension to be installed with Inkscape?
-* Improve program documentation. Improve input checking to restrict values to correct solutions.
+* Improve input checking to restrict values to correct solutions.
 * [Schroff] Maybe replace the somewhat obscure collection of Schroff rail input data with a dropdown box listing well-documented rail types (Vector, Z-rails, whatever it is that Elby sells, others?)
 * [Schroff] Add support for multiple mounting holes per rail where possible (this would definitely make the previous todo item worthwhile)
 * [Schroff] Add support for 6U row height
@@ -29,7 +34,7 @@ This is a major upgrade to support Inkscape v1.0 and CNC mills (with dogbone cut
 ## Use - regular tabbed boxes
  The interface is pretty self explanatory, the extension is 'Tabbed Box Maker' in the 'CNC Tools' group
 
-In order of appearance:
+Parameters in order of appearance:
 
 * Units - unit of measurement used for drawing
 
@@ -103,27 +108,31 @@ Much the same as for regular enclosures, except some options are removed, and so
 
 * If multiple rows, inter-row spacing
 
-## Windows Installation
-Boxmaker.inx, Schroffmaker.inx and Boxmaker.py need to be put in the inkscape extensions folder, generally in:
+## Installation
 
-   `%APPDATA%\inkscape\extensions`
+1. Download the extension from this GitHub page using the *[Clone or download > Download ZIP](archive/master.zip)* link. If you are using an older version of Inkscape, you will need to download the correct version of the extension (see [Version History](#version-history) below)
+2. Extract the zip file
+3. Copy all files except README.md and LICENSE into the Inkscape extensions directory.  The directory location varies depending on your operating system, and may be customised. The easiest way to find the directory is to open Inkscape, go to _Edit > Preferences > System_ (Win/Linux) or _Inkscape > Preferences > System_ (Mac).
+4. You can either copy the files to the _User extensions_ directory or the _Inkscape extensions_ directory.  The former will install this extension for just the current user, the latter will install it for all users of the machine.
+5. Inkscape *must* be restarted after copying the extension files.
+6. If it has been installed correctly, you should find the extension under the _Extensions > CNC Tools_ menu. Enjoy!
 
-or
+Default installation directories are given below:
 
-   `...\Inkscape\share\extensions`
+### Windows
 
-Inkscape will need to be restarted after you install.
+* User: `%APPDATA%\inkscape\extensions`
+* Machine: `C:\Program Files\Inkscape\share\extensions`
 
-## Linux/Mac Installation
-Boxmaker.inx, Schroffmaker.inx and Boxmaker.py need to be put in the inkscape extensions folder, generally in:
+### Mac
 
-   `usr/.../Inkscape/share/extensions`
+* User: `~/Library/Application Support/org.inkscape.Inkscape/config/inkscape/extensions`
+* Machine: `/Applications/Inkscape.app/Contents/Resources/share/inkscape/extensions`
 
-* NOTE: you need to make boxmaker.py executable, using something like this:
+### Linux
 
-   `chmod a+x boxmaker.py`
-
-Inkscape will need to be restarted after you install.
+* User: `~/.config/inkscape/extensions`
+* Machine: Depends on installation method
 
 ## Version History
 version | Date | Notes
@@ -140,4 +149,4 @@ version | Date | Notes
 0.95 | (20 Apr 2017) | Added optional dimples on tabs
 0.96 | (24 Apr 2017) | Orthogonalized box type, layout, tab style; added rotate-symmetric tabs
 0.99 | (4 June 2020) | Upgraded to support Inkscape v1.0, minor fixes and a tidy up of the parameters dialog layout
-1.0 |  (10 June 2020) | v1.0 final released: fixes and dogbone added - Mills now supported!
+1.0 |  (17 June 2020) | v1.0 final released: fixes and dogbone added - Mills now supported!
