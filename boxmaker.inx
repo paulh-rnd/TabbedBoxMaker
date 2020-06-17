@@ -81,8 +81,8 @@
 				<option value="6">Two panels only (LxW and LxH)</option>
 			</param>
 
-			<param name="div_l" type="int" min="0" max="10" _gui-text="    Dividers (Length axis)">2</param>
-			<param name="div_w" type="int" min="0" max="10" _gui-text="    Dividers (Width axis)">3</param>
+			<param name="div_l" type="int" min="0" max="20" _gui-text="    Dividers (Length axis)">2</param>
+			<param name="div_w" type="int" min="0" max="20" _gui-text="    Dividers (Width axis)">3</param>
 			<param name="keydiv" _gui-text="    Key the dividers into" type="optiongroup" appearance="combo">
 				<option value="3">None</option>
 				<option value="2">Walls</option>

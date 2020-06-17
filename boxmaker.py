@@ -40,6 +40,7 @@ v1.0 - 2020-06-17 by Paul Hutchison
  - Corrected kerf adjustments for overall box size and divider keyholes
  - Added dogbone cuts: CNC mills now supported!
  - Fix for floor/ceiling divider key issue (#17)
+ - Increased max dividers to 20 (#35)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
