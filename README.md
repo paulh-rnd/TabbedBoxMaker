@@ -15,6 +15,8 @@ Heavily modified by [Paul Hutchison](https://github.com/paulh-rnd)
 
 ## Release Notes
 This is a major upgrade to support Inkscape v1.0 and CNC mills (with dogbone cuts), plus an updated dialog layout and documentation, and a number of smaller fixes. So far no serious bugs (i.e causing runtime errors) have been found. The program works with Python 3 ONLY. See [issues](https://github.com/paulh-rnd/TabbedBoxMaker/issues) for known issues, or to log issues and enhancement requests.
+
+Note that in this release the extension has *moved from the Laser Tools to the CNC Tools submenu*.  This is to better reflect that this tool can be used on a wide variety of CNC machinery, especially with the addition of dogbone corners: laser, water jet, milling, even 3D printing.
  
 ## Donate
  Any donations will be gratefully received:
@@ -27,6 +29,8 @@ This is a major upgrade to support Inkscape v1.0 and CNC mills (with dogbone cut
 * Tidy, modularise and simplify the code - it is rough and unpythonic.  Needs some work by a master Python guru.
 * Add tests and perhaps get it submitted as a core extension to be installed with Inkscape?
 * Improve input checking to restrict values to correct solutions.
+* Dogbone only works on tabbed joins, NOT divider keyholes or slots yet
+* Would be great to make shapes closed and do path subtraction to get slot cutouts and keyholes from faces, and perhaps offer to add fill colour
 * [Schroff] Maybe replace the somewhat obscure collection of Schroff rail input data with a dropdown box listing well-documented rail types (Vector, Z-rails, whatever it is that Elby sells, others?)
 * [Schroff] Add support for multiple mounting holes per rail where possible (this would definitely make the previous todo item worthwhile)
 * [Schroff] Add support for 6U row height

@@ -42,7 +42,7 @@
   <effect>
     <object-type>all</object-type>
     <effects-menu>
-      <submenu _name="Laser Tools" />
+      <submenu _name="CNC Tools" />
     </effects-menu>
   </effect>
   <script>

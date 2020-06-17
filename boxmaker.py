@@ -39,6 +39,7 @@ v1.0 - 2020-06-17 by Paul Hutchison
  - Removed clearance parameter, as this was just subtracted from kerf - pointless?
  - Corrected kerf adjustments for overall box size and divider keyholes
  - Added dogbone cuts: CNC mills now supported!
+ - Fix for floor/ceiling divider key issue (#17)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -705,15 +706,20 @@ class BoxMaker(inkex.Effect):
         side(group,(x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing)      # side d
 
       if idx==0:
+        # remove tabs from dividers if not required
+        if not keydivfloor:
+          a=c=1
+          atabs=ctabs=0
         if not keydivwalls:
-          a=b=c=d=1
-          atabs=btabs=ctabs=dtabs=0
+          b=d=1 
+          btabs=dtabs=0
+
         y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
         for n in range(0,divx): # generate X dividers
           group = newGroup(self)
           x=n*(spacing+X)  # root x co-ord for piece      
           side(group,(x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0)          # side a
-          side(group,(x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if keydivwalls*b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing)    # side b
+          side(group,(x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing)    # side b
           side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
           side(group,(x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
       elif idx==1:
