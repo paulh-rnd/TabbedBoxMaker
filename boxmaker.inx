@@ -3,7 +3,7 @@
 	<_name>Tabbed Box Maker</_name>
 	<id>eu.twot.render.boxmaker</id>
 
-	<dependency type="executable" location="extensions">boxmaker.py</dependency>
+	<!--dependency type="executable" location="extensions">boxmaker.py</dependency-->
 	<hbox>
 		<vbox>
 			<label>Dimensions</label>
