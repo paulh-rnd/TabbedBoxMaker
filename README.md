@@ -1,6 +1,6 @@
 # TabbedBoxMaker: A free Inkscape extension for generating tab-jointed box patterns
 
-_version 1.0 - 17 June 2020_
+_version 1.1 - 9 Aug 2021_
 
 Original box maker by Elliot White (formerly of twot.eu, domain name now squatted)
 
@@ -154,3 +154,4 @@ version | Date | Notes
 0.96 | (24 Apr 2017) | Orthogonalized box type, layout, tab style; added rotate-symmetric tabs
 0.99 | (4 June 2020) | Upgraded to support Inkscape v1.0, minor fixes and a tidy up of the parameters dialog layout
 1.0 |  (17 June 2020) | v1.0 final released: fixes and dogbone added - Mills now supported!
+1.1 |  (9 Aug 2021) | v1.1 with fixes for newer Inkscape versions - sorry for the delays

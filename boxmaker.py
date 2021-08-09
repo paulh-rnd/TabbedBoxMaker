@@ -42,6 +42,9 @@ v1.0 - 2020-06-17 by Paul Hutchison
  - Fix for floor/ceiling divider key issue (#17)
  - Increased max dividers to 20 (#35)
 
+v1.1 - 2021-08-09 by Paul Hutchison
+ - Fixed for current Inkscape release version 1.1 - thanks to PR from https://github.com/roastedneutrons
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or

@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
 	<_name>CNC Tabbed Box Maker</_name>
-	<id>eu.twot.render.boxmaker</id>
+	<id>nz.paulh-rnd.tabbedboxmaker</id>
 
-	<dependency type="executable" location="extensions">boxmaker.py</dependency>
 	<hbox>
 		<vbox>
 			<label>Dimensions</label>
