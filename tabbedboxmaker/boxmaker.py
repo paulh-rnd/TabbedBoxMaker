@@ -736,6 +736,7 @@ class BoxMaker(inkex.Effect):
           side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
           side(group,(x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
 
-# Create effect instance and apply it.
-effect = BoxMaker()
-effect.run()
+if __name__ == '__main__':
+  # Create effect instance and apply it.
+  effect = BoxMaker()
+  effect.run()
