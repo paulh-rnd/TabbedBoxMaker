@@ -62,11 +62,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 __version__ = "1.0.1" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
 import os
-# import sys
 import inkex
-# import simplestyle
 import gettext
-# import math
 
 from copy import deepcopy
 _ = gettext.gettext
@@ -108,24 +105,24 @@ def dimple_str(tab_vector,vector_x,vector_y,dir_x,dir_y,dir_xn,dir_yn,ddir,is_ta
     ds=''
     if not is_tab:
         ddir = -ddir
-    if dimple_height>0 and tab_vector!=0:
+    if dimpleheight>0 and tab_vector!=0:
         if tab_vector>0:
-            dimple_start=(tab_vector-dimpleLength)/2-dimple_height
+            dimple_start=(tab_vector-dimpleLength)/2-dimpleheight
             tab_sgn=1
         else:
-            dimple_start=(tab_vector+dimpleLength)/2+dimple_height
+            dimple_start=(tab_vector+dimpleLength)/2+dimpleheight
             tab_sgn=-1
         Vxd=vector_x+dir_xn*dimple_start
         Vyd=vector_y+dir_yn*dimple_start
         ds+='L '+str(Vxd)+','+str(Vyd)+' '
-        Vxd=Vxd+(tab_sgn*dir_xn-ddir*dir_x)*dimple_height
-        Vyd=Vyd+(tab_sgn*dir_yn-ddir*dir_y)*dimple_height
+        Vxd=Vxd+(tab_sgn*dir_xn-ddir*dir_x)*dimpleheight
+        Vyd=Vyd+(tab_sgn*dir_yn-ddir*dir_y)*dimpleheight
         ds+='L '+str(Vxd)+','+str(Vyd)+' '
         Vxd=Vxd+tab_sgn*dir_xn*dimpleLength
         Vyd=Vyd+tab_sgn*dir_yn*dimpleLength
         ds+='L '+str(Vxd)+','+str(Vyd)+' '
-        Vxd=Vxd+(tab_sgn*dir_xn+ddir*dir_x)*dimple_height
-        Vyd=Vyd+(tab_sgn*dir_yn+ddir*dir_y)*dimple_height
+        Vxd=Vxd+(tab_sgn*dir_xn+ddir*dir_x)*dimpleheight
+        Vyd=Vyd+(tab_sgn*dir_yn+ddir*dir_y)*dimpleheight
         ds+='L '+str(Vxd)+','+str(Vyd)+' '
     return ds
 
@@ -355,8 +352,8 @@ class BoxMaker(inkex.Effect):
             dest='tabsymmetry',default=0,help='Tab style')
         self.arg_parser.add_argument('--tabtype',action='store',type=int,
             dest='tabtype',default=0,help='Tab type: regular or dogbone')
-        self.arg_parser.add_argument('--dimple_height',action='store',type=float,
-            dest='dimple_height',default=0,help='Tab Dimple Height')
+        self.arg_parser.add_argument('--dimpleheight',action='store',type=float,
+            dest='dimpleheight',default=0,help='Tab Dimple Height')
         self.arg_parser.add_argument('--dimplelength',action='store',type=float,
             dest='dimplelength',default=0,help='Tab Dimple Tip Length')
         self.arg_parser.add_argument('--hairline',action='store',type=int,
@@ -379,7 +376,7 @@ class BoxMaker(inkex.Effect):
             dest='keydiv',default=3,help='Key dividers into walls/floor')
 
     def effect(self):
-        global group,nom_tab,equalTabs,tab_symmetry,dimple_height,dimpleLength,thickness,kerf,halfkerf,dogbone,divx,divy,hairline,DEFAULT_THICKNESS,keydivwalls,keydivfloor
+        global group,nom_tab,equalTabs,tab_symmetry,dimpleheight,dimpleLength,thickness,kerf,halfkerf,dogbone,divx,divy,hairline,DEFAULT_THICKNESS,keydivwalls,keydivfloor
 
                 # Get access to main SVG document element and get its dimensions.
         svg = self.document.getroot()
@@ -432,7 +429,7 @@ class BoxMaker(inkex.Effect):
         nom_tab = self.svg.unittouu( str(self.options.tab) + unit )
         equalTabs=self.options.equal
         tab_symmetry=self.options.tabsymmetry
-        dimple_height=self.options.dimple_height
+        dimpleheight=self.options.dimpleheight
         dimpleLength=self.options.dimplelength
         dogbone = 1 if self.options.tabtype == 1 else 0
         layout=self.options.style

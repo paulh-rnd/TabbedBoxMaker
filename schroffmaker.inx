@@ -26,7 +26,7 @@
 
   <param name="thickness" type="float" precision="2" min="0.0" max="10000.0" _gui-text="Material Thickness">3.0</param>
   <param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Kerf (cut width)">0.1</param>
-  <param name="clearance" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Joint clearance">0.01</param>
+  <!-- <param name="clearance" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="Joint clearance">0.01</param> -->
   <param name="div_l" type="int" gui-hidden="true">0</param>
   <param name="div_w" type="int" gui-hidden="true">0</param>
 	
