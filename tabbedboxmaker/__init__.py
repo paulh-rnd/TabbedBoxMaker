@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: GPL-2.0
 
 import inkex
-from .boxmaker import BoxMaker
+from .boxmaker import InkexBoxMaker

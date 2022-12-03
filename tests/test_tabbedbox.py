@@ -251,7 +251,7 @@ class TestTabbedBox(unittest.TestCase):
                 )
                 expected = mask_panel_ids(open(expected_file, 'r').read())
                 
-                tbm = tabbedboxmaker.BoxMaker()
+                tbm = tabbedboxmaker.InkexBoxMaker()
     
                 tbm.parse_arguments(case['args'])
                 tbm.options.input_file = infh
@@ -263,6 +263,6 @@ class TestTabbedBox(unittest.TestCase):
                 output = mask_panel_ids(outfh.getvalue().decode('utf-8'))
                 
                 # Set self.maxDiff to None to see full diff.
-                #self.maxDiff = None
+                self.maxDiff = None
                 self.assertEqual(expected, output)
         
