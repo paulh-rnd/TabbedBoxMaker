@@ -94,7 +94,6 @@ class Path(object):
     def __init__(self, initial_x: float, initial_y: float):
         self.initial_x = initial_x
         self.initial_y = initial_y
-#        print(f'New path({self.initial_x}, {self.initial_y})')
         self.segments = []
 
     def __repr__(self):
@@ -107,7 +106,6 @@ class Path(object):
         self.segments.extend(segs)
 
     def as_svg(self, inkex_group) -> None:
-#        print(f'M {self.initial_x}, {self.initial_y} ')
         d = f'M {self.initial_x}, {self.initial_y} '
         for seg in self.segments:
             if seg.type == 'line':
@@ -261,10 +259,7 @@ class TabbedBox(object):
       dividerEdgeOffsetX = dirX*self.thickness;
       #dividerEdgeOffsetY = ;
       vectorX = rootX + (startOffsetX*self.thickness if notDirX else 0)
-#      print(f'startofsX={startOffsetX} thickness={self.thickness}')
       vectorY = rootY + (startOffsetY*self.thickness if notDirY else 0)
-#      print(f'startofsY={startOffsetY} thickness={self.thickness}')
-#      print(f'Path({vectorX}, {vectorY})')
       p = Path(vectorX, vectorY)
       vectorX = rootX+(startOffsetX if startOffsetX else dirX)*self.thickness
       vectorY = rootY+(startOffsetY if startOffsetY else dirY)*self.thickness
@@ -272,10 +267,8 @@ class TabbedBox(object):
       if notDirY: endOffsetY=0
     else:
       (vectorX,vectorY)=(rootX+startOffsetX*self.thickness,rootY+startOffsetY*self.thickness)
-#      print(f'startofsY={startOffsetY} thickness={self.thickness} vectorY={vectorY}')
       dividerEdgeOffsetX=dirY*self.thickness
       dividerEdgeOffsetY=dirX*self.thickness
-#      print(f'else Path({vectorX}, {vectorY})')
       p = Path(vectorX, vectorY)
       if notDirX: vectorY=rootY # set correct line start for tab generation
       if notDirY: vectorX=rootX
@@ -413,7 +406,6 @@ class TabbedBox(object):
       #   h+='L '+str(Dx)+','+str(Dy)+' '
       #   group.add(getLine(h))
     paths.append(p)
-#    print(f'paths={paths}')
     return paths
 
   def make(self, X: float, Y: float, Z: float) -> List[List[Path]]:
@@ -870,7 +862,6 @@ class InkexBoxMaker(inkex.Effect):
     if error: exit()
 
     groups = box.make(X, Y, Z)
-#    print(f'groups={groups}')
     for group in groups:
         inkex_grp = newGroup(self)
         for path in group:
