@@ -66,10 +66,21 @@ import os,sys,inkex,simplestyle,gettext,math
 from copy import deepcopy
 _ = gettext.gettext
 
-linethickness = 1 # default unless overridden by settings
+
+# SVG path reference: https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths
+
+class AbstractShape(object):
+    pass
 
 
-# https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Paths
+class Circle(AbstractShape):
+    def __init__(self, cX: float, cY: float, r: float) -> None:
+        self.centre = (cX, cY)
+        self.radius = r
+
+    def __repr__(self):
+        return f'{__class__}({self.initial_x}, {self.initial_y}, r={self.radius})'
+
 
 class PathSegment(object):
     def __init__(self, segtype: str, *args):
@@ -80,16 +91,8 @@ class LineSegment(PathSegment):
     def __init__(self, toX: float, toY: float) -> None:
         super().__init__('line', toX, toY)
 
-class Circle(object):
-    def __init__(self, cX: float, cY: float, r: float) -> None:
-        self.centre = (cX, cY)
-        self.radius = r
 
-    def as_svg(self, inkex_group) -> None:
-        inkex_group.add(getCircle(self.radius, self.centre))
-
-
-class Path(object):
+class Path(AbstractShape):
     """An abstract path object"""
     def __init__(self, initial_x: float, initial_y: float):
         self.initial_x = initial_x
@@ -97,7 +100,7 @@ class Path(object):
         self.segments = []
 
     def __repr__(self):
-        return f'Path({self.initial_x}, {self.initial_y}, segments={len(self.segments)})'
+        return f'{__class__}({self.initial_x}, {self.initial_y}, segments={len(self.segments)})'
 
     def add(self, seg: PathSegment) -> None:
         self.segments.append(seg)
@@ -105,57 +108,16 @@ class Path(object):
     def add_multiple(self, segs: List[PathSegment]) -> None:
         self.segments.extend(segs)
 
-    def as_svg(self, inkex_group) -> None:
-        d = f'M {self.initial_x}, {self.initial_y} '
-        for seg in self.segments:
-            if seg.type == 'line':
-                d += f'L {seg.args[0]} {seg.args[1]} '
-            else:
-                raise Exception(f'Unsupported segment type "{seg.type}"')
-        inkex_group.add(getLine(d))
 
 def log(text):
   if 'SCHROFF_LOG' in os.environ:
     f = open(os.environ.get('SCHROFF_LOG'), 'a')
     f.write(text + "\n")
 
-def newGroup(canvas):
-  # Create a new group and add element created from line string
-  panelId = canvas.svg.get_unique_id('panel')
-  group = canvas.svg.get_current_layer().add(inkex.Group(id=panelId))
-  return group
-
-def getLine(XYstring):
-  line = inkex.PathElement()
-  line.style = { 'stroke': '#000000', 'stroke-width'  : str(linethickness), 'fill': 'none' }
-  line.path = XYstring
-  #inkex.etree.SubElement(parent, inkex.addNS('path','svg'), drw)
-  return line
-
-# jslee - shamelessly adapted from sample code on below Inkscape wiki page 2015-07-28
-# http://wiki.inkscape.org/wiki/index.php/Generating_objects_from_extensions
-def getCircle(r, c):
-    (cx, cy) = c
-    log("putting circle at (%d,%d)" % (cx,cy))
-    circle = inkex.PathElement.arc((cx, cy), r)
-    circle.style = { 'stroke': '#000000', 'stroke-width': str(linethickness), 'fill': 'none' }
-
-    # ell_attribs = {'style':simplestyle.formatStyle(style),
-    #     inkex.addNS('cx','sodipodi')        :str(cx),
-    #     inkex.addNS('cy','sodipodi')        :str(cy),
-    #     inkex.addNS('rx','sodipodi')        :str(r),
-    #     inkex.addNS('ry','sodipodi')        :str(r),
-    #     inkex.addNS('start','sodipodi')     :str(0),
-    #     inkex.addNS('end','sodipodi')       :str(2*math.pi),
-    #     inkex.addNS('open','sodipodi')      :'true', #all ellipse sectors we will draw are open
-    #     inkex.addNS('type','sodipodi')      :'arc',
-    #     'transform'                         :'' }
-    #inkex.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
-    return circle
-
 
 class TabbedBox(object):
   def __init__(self) -> None:
+
       self.boxtype = 1
       self.layout = 1
       self.thickness = 0
@@ -185,7 +147,7 @@ class TabbedBox(object):
       self.rail_mount_depth = 0
       self.rail_mount_centre_offset = 0
       self.rail_mount_radius = 0
-
+      
   def dimple(self, tabVector,vectorX,vectorY,dirX,dirY,dirxN,diryN,ddir,isTab) -> List[PathSegment]:
     segs = []
     if not isTab:
@@ -692,182 +654,3 @@ class TabbedBox(object):
           )
     return groups
 
-
-
-class InkexBoxMaker(inkex.Effect):
-  def __init__(self):
-      # Call the base class constructor.
-      inkex.Effect.__init__(self)
-      # Define options
-      self.arg_parser.add_argument('--schroff',action='store',type=int,
-        dest='schroff',default=0,help='Enable Schroff mode')
-      self.arg_parser.add_argument('--rail_height',action='store',type=float,
-        dest='rail_height',default=10.0,help='Height of rail')
-      self.arg_parser.add_argument('--rail_mount_depth',action='store',type=float,
-        dest='rail_mount_depth',default=17.4,help='Depth at which to place hole for rail mount bolt')
-      self.arg_parser.add_argument('--rail_mount_centre_offset',action='store',type=float,
-        dest='rail_mount_centre_offset',default=0.0,help='How far toward row centreline to offset rail mount bolt (from rail centreline)')
-      self.arg_parser.add_argument('--rows',action='store',type=int,
-        dest='rows',default=0,help='Number of Schroff rows')
-      self.arg_parser.add_argument('--hp',action='store',type=int,
-        dest='hp',default=0,help='Width (TE/HP units) of Schroff rows')
-      self.arg_parser.add_argument('--row_spacing',action='store',type=float,
-        dest='row_spacing',default=10.0,help='Height of rail')
-      self.arg_parser.add_argument('--unit',action='store',type=str,
-        dest='unit',default='mm',help='Measure Units')
-      self.arg_parser.add_argument('--inside',action='store',type=int,
-        dest='inside',default=0,help='Int/Ext Dimension')
-      self.arg_parser.add_argument('--length',action='store',type=float,
-        dest='length',default=100,help='Length of Box')
-      self.arg_parser.add_argument('--width',action='store',type=float,
-        dest='width',default=100,help='Width of Box')
-      self.arg_parser.add_argument('--depth',action='store',type=float,
-        dest='height',default=100,help='Height of Box')
-      self.arg_parser.add_argument('--tab',action='store',type=float,
-        dest='tab',default=25,help='Nominal Tab Width')
-      self.arg_parser.add_argument('--equal',action='store',type=int,
-        dest='equal',default=0,help='Equal/Prop Tabs')
-      self.arg_parser.add_argument('--tabsymmetry',action='store',type=int,
-        dest='tabsymmetry',default=0,help='Tab style')
-      self.arg_parser.add_argument('--tabtype',action='store',type=int,
-        dest='tabtype',default=0,help='Tab type: regular or dogbone')
-      self.arg_parser.add_argument('--dimpleheight',action='store',type=float,
-        dest='dimpleheight',default=0,help='Tab Dimple Height')
-      self.arg_parser.add_argument('--dimplelength',action='store',type=float,
-        dest='dimplelength',default=0,help='Tab Dimple Tip Length')
-      self.arg_parser.add_argument('--hairline',action='store',type=int,
-        dest='hairline',default=0,help='Line Thickness')
-      self.arg_parser.add_argument('--thickness',action='store',type=float,
-        dest='thickness',default=10,help='Thickness of Material')
-      self.arg_parser.add_argument('--kerf',action='store',type=float,
-        dest='kerf',default=0.5,help='Kerf (width of cut)')
-      self.arg_parser.add_argument('--style',action='store',type=int,
-        dest='style',default=25,help='Layout/Style')
-      self.arg_parser.add_argument('--spacing',action='store',type=float,
-        dest='spacing',default=25,help='Part Spacing')
-      self.arg_parser.add_argument('--boxtype',action='store',type=int,
-        dest='boxtype',default=25,help='Box type')
-      self.arg_parser.add_argument('--div_l',action='store',type=int,
-        dest='div_l',default=25,help='Dividers (Length axis)')
-      self.arg_parser.add_argument('--div_w',action='store',type=int,
-        dest='div_w',default=25,help='Dividers (Width axis)')
-      self.arg_parser.add_argument('--keydiv',action='store',type=int,
-        dest='keydiv',default=3,help='Key dividers into walls/floor')
-
-  def effect(self):
-#    global group,nomTab,equalTabs,tabSymmetry,dimpleHeight,dimpleLength,thickness
-#    global kerf,halfkerf,dogbone,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
-    global linethickness
-
-        # Get access to main SVG document element and get its dimensions.
-    svg = self.document.getroot()
-    box = TabbedBox()
-
-        # Get the attributes:
-    widthDoc  = self.svg.unittouu(svg.get('width'))
-    heightDoc = self.svg.unittouu(svg.get('height'))
-
-    # Get script's option values.
-    hairline=self.options.hairline
-    unit=self.options.unit
-    box.inside=self.options.inside
-    box.schroff=self.options.schroff
-    box.kerf = self.svg.unittouu( str(self.options.kerf)  + unit )
-
-    # Set the line thickness
-    if hairline:
-        linethickness=self.svg.unittouu('0.002in')
-    else:
-        linethickness=1
-
-    if box.schroff:
-        box.rows=self.options.rows
-        box.rail_height=self.svg.unittouu(str(self.options.rail_height)+unit)
-        box.row_centre_spacing=self.svg.unittouu(str(122.5)+unit)
-        box.row_spacing=self.svg.unittouu(str(self.options.row_spacing)+unit)
-        box.rail_mount_depth=self.svg.unittouu(str(self.options.rail_mount_depth)+unit)
-        box.rail_mount_centre_offset=self.svg.unittouu(str(self.options.rail_mount_centre_offset)+unit)
-        box.rail_mount_radius=self.svg.unittouu(str(2.5)+unit)
-
-    ## minimally different behaviour for schroffmaker.inx vs. boxmaker.inx
-    ## essentially schroffmaker.inx is just an alternate interface with different
-    ## default settings, some options removed, and a tiny amount of extra logic
-    if box.schroff:
-        ## schroffmaker.inx
-        X = self.svg.unittouu(str(self.options.hp * 5.08) + unit)
-        # 122.5mm vertical distance between mounting hole centres of 3U Schroff panels
-        row_height = rows * (box.row_centre_spacing + box.rail_height)
-        # rail spacing in between rows but never between rows and case panels
-        row_spacing_total = (box.rows - 1) * box.row_spacing
-        Y = row_height + row_spacing_total
-    else:
-        ## boxmaker.inx
-        X = self.svg.unittouu( str(self.options.length + box.kerf)  + unit )
-        Y = self.svg.unittouu( str(self.options.width + box.kerf) + unit )
-
-    Z = self.svg.unittouu( str(self.options.height + box.kerf)  + unit )
-    box.thickness = self.svg.unittouu( str(self.options.thickness)  + unit )
-    box.nomTab = self.svg.unittouu( str(self.options.tab) + unit )
-    box.equalTabs=self.options.equal
-    box.tabSymmetry=self.options.tabsymmetry
-    box.dimpleHeight=self.options.dimpleheight
-    box.dimpleLength=self.options.dimplelength
-    box.dogbone = 1 if self.options.tabtype == 1 else 0
-    box.layout=self.options.style
-    box.spacing = self.svg.unittouu( str(self.options.spacing)  + unit )
-    box.boxtype = self.options.boxtype
-    box.divx = self.options.div_l
-    box.divy = self.options.div_w
-    box.keydivwalls = 0 if self.options.keydiv == 3 or self.options.keydiv == 1 else 1
-    box.keydivfloor = 0 if self.options.keydiv == 3 or self.options.keydiv == 2 else 1
-
-    if box.inside: # if inside dimension selected correct values to outside dimension
-      X+=box.thickness*2
-      Y+=box.thickness*2
-      Z+=box.thickness*2
-
-    # check input values mainly to avoid python errors
-    # TODO restrict values to *correct* solutions
-    # TODO restrict divisions to logical values
-    error=0
-
-    if min(X,Y,Z)==0:
-      inkex.errormsg(_('Error: Dimensions must be non zero'))
-      error=1
-    if max(X,Y,Z)>max(widthDoc,heightDoc)*10: # crude test
-      inkex.errormsg(_('Error: Dimensions Too Large'))
-      error=1
-    if min(X,Y,Z)<3*box.nomTab:
-      inkex.errormsg(_('Error: Tab size too large'))
-      error=1
-    if box.nomTab<box.thickness:
-      inkex.errormsg(_('Error: Tab size too small'))
-      error=1
-    if box.thickness==0:
-      inkex.errormsg(_('Error: Thickness is zero'))
-      error=1
-    if box.thickness>min(X,Y,Z)/3: # crude test
-      inkex.errormsg(_('Error: Material too thick'))
-      error=1
-    if box.kerf>min(X,Y,Z)/3: # crude test
-      inkex.errormsg(_('Error: Kerf too large'))
-      error=1
-    if box.spacing>max(X,Y,Z)*10: # crude test
-      inkex.errormsg(_('Error: Spacing too large'))
-      error=1
-    if box.spacing<box.kerf:
-      inkex.errormsg(_('Error: Spacing too small'))
-      error=1
-
-    if error: exit()
-
-    groups = box.make(X, Y, Z)
-    for group in groups:
-        inkex_grp = newGroup(self)
-        for path in group:
-            path.as_svg(inkex_grp)
-
-if __name__ == '__main__':
-  # Create effect instance and apply it.
-  effect = InkexBoxMaker()
-  effect.run()
