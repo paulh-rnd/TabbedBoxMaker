@@ -4,3 +4,4 @@
 
 import inkex
 from .inkex import InkexBoxMaker
+from .boxmaker import add_args,TabbedBox
