@@ -2,7 +2,7 @@ import io
 import os
 import re
 import unittest
-import tabbedboxmaker
+import tabbedboxmaker.inkex
 
 blank_svg=b'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
@@ -52,193 +52,193 @@ def mask_panel_ids(svgin: str) -> str:
     return re.sub(r'"panel\d+"', '"panelTEST"', svgin)
 
 class TestTabbedBox(unittest.TestCase):
-    
+
     def test_tabbed(self):
         # See boxmaker.inx for arg descriptions
         cases = [
             {
                 'label': 'fully_enclosed',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=1', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=1', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'open_top',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'two_sides_open',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=3', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=3', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'three_sides_open',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=4', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=4', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'opposite_ends_open',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=5', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=5', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'two_panels_only',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=6', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=6', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'outside_measurement',
                 'args': [
-                    '--unit=mm', '--inside=0', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=0', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'with_dogbone',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=1', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=1',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'with_dimple',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0.2', '--dimplelength=0.2',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'with_rotate_symmetry_tabs',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=1', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'with_thick_lines',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=0', '--thickness=3', '--kerf=0', '--style=1', 
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=0', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'with_nonzero_kerf',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0.1', '--style=1', 
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0.1', '--style=1',
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'threepiece_layout',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=2', 
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=2',
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'inline_layout',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
                     '--hairline=1', '--thickness=3', '--kerf=0', '--style=3',
-                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1', 
+                    '--boxtype=2', '--div_l=0', '--div_w=0', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'with_dividers_keyed_all',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
                     '--boxtype=2', '--div_l=1', '--div_w=1', '--keydiv=0',
                     '--spacing=1'],
             },
             {
                 'label': 'with_dividers_keyed_floor',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
                     '--boxtype=2', '--div_l=1', '--div_w=1', '--keydiv=1',
                     '--spacing=1'],
             },
             {
                 'label': 'with_dividers_keyed_walls',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
                     '--boxtype=2', '--div_l=1', '--div_w=1', '--keydiv=2',
                     '--spacing=1'],
             },
             {
                 'label': 'with_dividers_keyed_none',
                 'args': [
-                    '--unit=mm', '--inside=1', '--length=80', '--width=100', 
-                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0', 
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tab=6', '--tabtype=0',
                     '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
-                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1', 
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
                     '--boxtype=2', '--div_l=1', '--div_w=1', '--keydiv=3',
                     '--spacing=1'],
             },
-            
+
         ]
-        
+
         for case in cases:
             with self.subTest(label=case['label']):
                 infh = io.BytesIO(blank_svg)
@@ -250,19 +250,18 @@ class TestTabbedBox(unittest.TestCase):
                     expected_output_dir, case['label'] + '.svg'
                 )
                 expected = mask_panel_ids(open(expected_file, 'r').read())
-                
-                tbm = tabbedboxmaker.InkexBoxMaker()
-    
+
+                tbm = tabbedboxmaker.inkex.InkexBoxMaker()
+
                 tbm.parse_arguments(case['args'])
                 tbm.options.input_file = infh
                 tbm.options.output = outfh
-    
+
                 tbm.load_raw()
                 tbm.save_raw(tbm.effect())
-                
+
                 output = mask_panel_ids(outfh.getvalue().decode('utf-8'))
-                
+
                 # Set self.maxDiff to None to see full diff.
                 self.maxDiff = None
                 self.assertEqual(expected, output)
-        

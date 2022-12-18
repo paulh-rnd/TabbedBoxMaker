@@ -3,48 +3,6 @@
 Generates Inkscape SVG file containing box components needed to
 CNC (laser/mill) cut a box with tabbed joints taking kerf and clearance into account
 
-Original Tabbed Box Maker Copyright (C) 2011 elliot white
-
-Changelog:
-19/12/2014 Paul Hutchison:
- - Ability to generate 6, 5, 4, 3 or 2-panel cutouts
- - Ability to also generate evenly spaced dividers within the box
-   including tabbed joints to box sides and slots to slot into each other
-
-23/06/2015 by Paul Hutchison:
- - Updated for Inkscape's 0.91 breaking change (unittouu)
-
-v0.93 - 15/8/2016 by Paul Hutchison:
- - Added Hairline option and fixed open box height bug
-
-v0.94 - 05/01/2017 by Paul Hutchison:
- - Added option for keying dividers into walls/floor/none
-
-v0.95 - 2017-04-20 by Jim McBeath
- - Added optional dimples
-
-v0.96 - 2017-04-24 by Jim McBeath
- - Refactored to make box type, tab style, and layout all orthogonal
- - Added Tab Style option to allow creating waffle-block-style tabs
- - Made open box size correct based on inner or outer dimension choice
- - Fixed a few tab bugs
-
-v0.99 - 2020-06-01 by Paul Hutchison
- - Preparatory release with Inkscape 1.0 compatibility upgrades (further fixes to come!)
- - Removed Antisymmetric option as it's broken, kinda pointless and looks weird
- - Fixed divider issues with Rotate Symmetric
- - Made individual panels and their keyholes/slots grouped
-
-v1.0 - 2020-06-17 by Paul Hutchison
- - Removed clearance parameter, as this was just subtracted from kerf - pointless?
- - Corrected kerf adjustments for overall box size and divider keyholes
- - Added dogbone cuts: CNC mills now supported!
- - Fix for floor/ceiling divider key issue (#17)
- - Increased max dividers to 20 (#35)
-
-v1.1 - 2021-08-09 by Paul Hutchison
- - Fixed for current Inkscape release version 1.1 - thanks to PR from https://github.com/roastedneutrons
-
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -58,12 +16,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-__version__ = "1.0" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
-from typing import List
-
-import os,sys,inkex,simplestyle,gettext,math
-from copy import deepcopy
+import gettext
+import inkex
 import tabbedboxmaker
 
 _ = gettext.gettext
@@ -108,6 +63,12 @@ def getCircle(r, c):
 class SvgExporter(object):
     """Export AbstractShape objects as SVG"""
 
+    # Is there a better way to do this?
+    # That is, to extend the capability of the AbstractShape classes and enable
+    # writing SVG, but in such a way that users of the base class are not
+    # affected.  I think this rules out inheritance. (The only way I can see
+    # to use inheritance would be with a factory).
+    # The approach here feels kludgy though.
     def export(self, shape, inkex_group) -> None:
         """Write the shape into the given inkex_group"""
         try:
@@ -133,20 +94,19 @@ class SvgExporter(object):
 
 class InkexBoxMaker(inkex.Effect):
   def __init__(self):
-      # Call the base class constructor.
       inkex.Effect.__init__(self)
 
       # Add common boxmaker args.
       tabbedboxmaker.add_args(self.arg_parser)
 
       # Add inkex plugin specific args.
-      arg_parser.add_argument('--length',action='store',type=float,
+      self.arg_parser.add_argument('--length',action='store',type=float,
         dest='length',default=100,help='Length of Box')
-      arg_parser.add_argument('--width',action='store',type=float,
+      self.arg_parser.add_argument('--width',action='store',type=float,
         dest='width',default=100,help='Width of Box')
-      arg_parser.add_argument('--depth',action='store',type=float,
+      self.arg_parser.add_argument('--depth',action='store',type=float,
         dest='height',default=100,help='Height of Box')
-      arg_parser.add_argument('--thickness',action='store',type=float,
+      self.arg_parser.add_argument('--thickness',action='store',type=float,
         dest='thickness',default=10,help='Thickness of Material')
       self.arg_parser.add_argument('--hairline',action='store',type=int,
         dest='hairline',default=0,help='Line Thickness')
@@ -178,18 +138,18 @@ class InkexBoxMaker(inkex.Effect):
 
     if self.options.schroff:
         self.options.rail_height = self._to_svg_units(self.options.rail_height, unit)
-        self.options.row_centre_spacing = self._to_svg_units(122.5, unit)  # TODO(desbonne): Fixed number with variable unit? Feels wrong.
+        self.options.row_centre_spacing = self._to_svg_units(122.5, unit)  # TODO(manuel): Fixed number with variable unit? Feels wrong.
         self.options.row_spacing = self._to_svg_units(self.options.row_spacing, unit)
         self.options.rail_mount_depth = self._to_svg_units(self.options.rail_mount_depth, unit)
         self.options.rail_mount_centre_offset = self._to_svg_units(self.options.rail_mount_centre_offset, unit)
-        self.options.rail_mount_radius=self._to_svg_units(2.5, unit) # TODO(desbonne): Same - fixed number with variable unit.
+        self.options.rail_mount_radius=self._to_svg_units(2.5, unit) # TODO(manuel): Same - fixed number with variable unit.
 
     ## minimally different behaviour for schroffmaker.inx vs. boxmaker.inx
     ## essentially schroffmaker.inx is just an alternate interface with different
     ## default settings, some options removed, and a tiny amount of extra logic
     if self.options.schroff:
         ## schroffmaker.inx
-        X = self._to_svg_units(self.options.hp * 5.08, unit) # TODO(desbonne): Same - fixed number with variable unit.
+        X = self._to_svg_units(self.options.hp * 5.08, unit) # TODO(manuel): Same - fixed number with variable unit.
         # 122.5mm vertical distance between mounting hole centres of 3U Schroff panels
         row_height = rows * (self.options.row_centre_spacing + self.options.rail_height)
         # rail spacing in between rows but never between rows and case panels
