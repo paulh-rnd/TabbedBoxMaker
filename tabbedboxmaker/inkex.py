@@ -19,11 +19,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import gettext
 import inkex
+import os
 import tabbedboxmaker
 
 _ = gettext.gettext
 
 linethickness = 1 # default unless overridden by settings
+
+def log(text):
+  if 'SCHROFF_LOG' in os.environ:
+    f = open(os.environ.get('SCHROFF_LOG'), 'a')
+    f.write(text + "\n")
 
 def newGroup(canvas):
   # Create a new group and add element created from line string
@@ -151,7 +157,7 @@ class InkexBoxMaker(inkex.Effect):
         ## schroffmaker.inx
         X = self._to_svg_units(self.options.hp * 5.08, unit) # TODO(manuel): Same - fixed number with variable unit.
         # 122.5mm vertical distance between mounting hole centres of 3U Schroff panels
-        row_height = rows * (self.options.row_centre_spacing + self.options.rail_height)
+        row_height = self.options.rows * (self.options.row_centre_spacing + self.options.rail_height)
         # rail spacing in between rows but never between rows and case panels
         row_spacing_total = (self.options.rows - 1) * self.options.row_spacing
         Y = row_height + row_spacing_total

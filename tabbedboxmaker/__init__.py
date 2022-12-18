@@ -574,7 +574,7 @@ class TabbedBox(object):
             rh1y=rystart+self.cfg.rail_mount_centre_offset
             rh2y=rh1y+self.cfg.row_centre_spacing-self.cfg.rail_mount_centre_offset
             groups.append(Circle(self.cfg.rail_mount_radius,(rhx,rh1y)))
-            group.append(Circle(self.cfg.rail_mount_radius,(rhx,rh2y)))
+            groups.append(Circle(self.cfg.rail_mount_radius,(rhx,rh2y)))
             rystart+=self.cfg.row_centre_spacing+self.cfg.row_spacing+self.cfg.rail_height
 
       # generate and draw the sides of each piece
