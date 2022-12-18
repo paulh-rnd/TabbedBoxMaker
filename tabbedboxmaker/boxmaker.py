@@ -136,12 +136,6 @@ def add_args(arg_parser: argparse.ArgumentParser) -> None:
         dest='unit',default='mm',help='Measure Units')
     arg_parser.add_argument('--inside',action='store',type=int,
         dest='inside',default=0,help='Int/Ext Dimension')
-    arg_parser.add_argument('--length',action='store',type=float,
-        dest='length',default=100,help='Length of Box')
-    arg_parser.add_argument('--width',action='store',type=float,
-        dest='width',default=100,help='Width of Box')
-    arg_parser.add_argument('--depth',action='store',type=float,
-        dest='height',default=100,help='Height of Box')
     arg_parser.add_argument('--tab',action='store',type=float,
         dest='tab',default=25,help='Nominal Tab Width')
     arg_parser.add_argument('--equal',action='store',type=int,
@@ -154,20 +148,18 @@ def add_args(arg_parser: argparse.ArgumentParser) -> None:
         dest='dimpleheight',default=0,help='Tab Dimple Height')
     arg_parser.add_argument('--dimplelength',action='store',type=float,
         dest='dimplelength',default=0,help='Tab Dimple Tip Length')
-    arg_parser.add_argument('--thickness',action='store',type=float,
-        dest='thickness',default=10,help='Thickness of Material')
     arg_parser.add_argument('--kerf',action='store',type=float,
         dest='kerf',default=0.5,help='Kerf (width of cut)')
     arg_parser.add_argument('--style',action='store',type=int,
-        dest='style',default=25,help='Layout/Style')
+        dest='style',default=1,help='Layout/Style')
     arg_parser.add_argument('--spacing',action='store',type=float,
-        dest='spacing',default=25,help='Part Spacing')
+        dest='spacing',default=1,help='Part Spacing')
     arg_parser.add_argument('--boxtype',action='store',type=int,
-        dest='boxtype',default=25,help='Box type')
+        dest='boxtype',default=1,help='Box type')
     arg_parser.add_argument('--div_l',action='store',type=int,
-        dest='div_l',default=25,help='Dividers (Length axis)')
+        dest='div_l',default=0,help='Dividers (Length axis)')
     arg_parser.add_argument('--div_w',action='store',type=int,
-        dest='div_w',default=25,help='Dividers (Width axis)')
+        dest='div_w',default=0,help='Dividers (Width axis)')
     arg_parser.add_argument('--keydiv',action='store',type=int,
         dest='keydiv',default=3,help='Key dividers into walls/floor')
 
@@ -206,7 +198,7 @@ class TabbedBox(object):
       segs.append(LineSegment(Vxd, Vyd))
     return segs
 
-  def side(self, root,startOffset,endOffset,tabVec,length,direction,isTab,isDivider,numDividers,dividerSpacing) -> List[Path]:
+  def side(self, thickness, root,startOffset,endOffset,tabVec,length,direction,isTab,isDivider,numDividers,dividerSpacing) -> List[Path]:
     rootX, rootY = root
     startOffsetX, startOffsetY = startOffset
     endOffsetX, endOffsetY = endOffset
@@ -216,7 +208,7 @@ class TabbedBox(object):
     halfkerf = self.cfg.kerf/2
 
     if (self.cfg.tabsymmetry==1):        # waffle-block style rotationally symmetric tabs
-        divisions=int((length-2*self.cfg.thickness)/self.cfg.tab)
+        divisions=int((length-2*thickness)/self.cfg.tab)
         if divisions%2: divisions+=1      # make divs even
         divisions=float(divisions)
         tabs=divisions/2                  # tabs for side
@@ -227,7 +219,7 @@ class TabbedBox(object):
         tabs=(divisions-1)/2              # tabs for side
 
     if (self.cfg.tabsymmetry==1):        # waffle-block style rotationally symmetric tabs
-      gapWidth=tabWidth=(length-2*self.cfg.thickness)/divisions
+      gapWidth=tabWidth=(length-2*thickness)/divisions
     elif self.cfg.equalTabs:
       gapWidth=tabWidth=length/divisions
     else:
@@ -245,25 +237,25 @@ class TabbedBox(object):
     firstholelenX=0
     firstholelenY=0
     firstVec=0; secondVec=tabVec
-    dividerEdgeOffsetX = dividerEdgeOffsetY = self.cfg.thickness
+    dividerEdgeOffsetX = dividerEdgeOffsetY = thickness
     notDirX=0 if dirX else 1 # used to select operation on x or y
     notDirY=0 if dirY else 1
     paths = []
     p = None
     if (self.cfg.tabsymmetry==1):
-      dividerEdgeOffsetX = dirX*self.cfg.thickness;
+      dividerEdgeOffsetX = dirX*thickness;
       #dividerEdgeOffsetY = ;
-      vectorX = rootX + (startOffsetX*self.cfg.thickness if notDirX else 0)
-      vectorY = rootY + (startOffsetY*self.cfg.thickness if notDirY else 0)
+      vectorX = rootX + (startOffsetX*thickness if notDirX else 0)
+      vectorY = rootY + (startOffsetY*thickness if notDirY else 0)
       p = Path(vectorX, vectorY)
-      vectorX = rootX+(startOffsetX if startOffsetX else dirX)*self.cfg.thickness
-      vectorY = rootY+(startOffsetY if startOffsetY else dirY)*self.cfg.thickness
+      vectorX = rootX+(startOffsetX if startOffsetX else dirX)*thickness
+      vectorY = rootY+(startOffsetY if startOffsetY else dirY)*thickness
       if notDirX: endOffsetX=0
       if notDirY: endOffsetY=0
     else:
-      (vectorX,vectorY)=(rootX+startOffsetX*self.cfg.thickness,rootY+startOffsetY*self.cfg.thickness)
-      dividerEdgeOffsetX=dirY*self.cfg.thickness
-      dividerEdgeOffsetY=dirX*self.cfg.thickness
+      (vectorX,vectorY)=(rootX+startOffsetX*thickness,rootY+startOffsetY*thickness)
+      dividerEdgeOffsetX=dirY*thickness
+      dividerEdgeOffsetY=dirX*thickness
       p = Path(vectorX, vectorY)
       if notDirX: vectorY=rootY # set correct line start for tab generation
       if notDirY: vectorX=rootX
@@ -276,7 +268,7 @@ class TabbedBox(object):
       if ((tabDivision%2) ^ (not isTab)) and numDividers>0 and not isDivider: # draw holes for divider tabs to key into side walls
         w=gapWidth if isTab else tabWidth
         if tabDivision==1 and self.cfg.tabsymmetry==0:
-          w-=startOffsetX*self.cfg.thickness
+          w-=startOffsetX*thickness
         holeLenX=dirX*w+notDirX*firstVec+first*dirX
         holeLenY=dirY*w+notDirY*firstVec+first*dirY
         if first:
@@ -286,7 +278,7 @@ class TabbedBox(object):
           Dx=vectorX+-dirY*dividerSpacing*dividerNumber+notDirX*halfkerf+dirX*self.cfg.dogbone*halfkerf-self.cfg.dogbone*first*dirX
           Dy=vectorY+dirX*dividerSpacing*dividerNumber-notDirY*halfkerf+dirY*self.cfg.dogbone*halfkerf-self.cfg.dogbone*first*dirY
           if tabDivision==1 and self.cfg.tabsymmetry==0:
-            Dx+=startOffsetX*self.cfg.thickness
+            Dx+=startOffsetX*thickness
           hole = Path(Dx, Dy)
           Dx=Dx+holeLenX
           Dy=Dy+holeLenY
@@ -310,14 +302,14 @@ class TabbedBox(object):
             Dx=Dx+dirX*(first+length/2)
             Dy=Dy+dirY*(first+length/2)
             hole.add(LineSegment(Dx, Dy))
-            Dx=Dx+notDirX*(self.cfg.thickness-self.cfg.kerf)
-            Dy=Dy+notDirY*(self.cfg.thickness-self.cfg.kerf)
+            Dx=Dx+notDirX*(thickness-self.cfg.kerf)
+            Dy=Dy+notDirY*(thickness-self.cfg.kerf)
             hole.add(LineSegment(Dx, Dy))
             Dx=Dx-dirX*(first+length/2)
             Dy=Dy-dirY*(first+length/2)
             hole.add(LineSegment(Dx, Dy))
-            Dx=Dx-notDirX*(self.cfg.thickness-self.cfg.kerf)
-            Dy=Dy-notDirY*(self.cfg.thickness-self.cfg.kerf)
+            Dx=Dx-notDirX*(thickness-self.cfg.kerf)
+            Dy=Dy-notDirY*(thickness-self.cfg.kerf)
             hole.add(LineSegment(Dx, Dy))
             paths.append(hole)
         # draw the gap
@@ -359,7 +351,7 @@ class TabbedBox(object):
       first=0
 
     #finish the line off
-    p.add(LineSegment(rootX+endOffsetX*self.cfg.thickness+dirX*length, rootY+endOffsetY*self.cfg.thickness+dirY*length))
+    p.add(LineSegment(rootX+endOffsetX*thickness+dirX*length, rootY+endOffsetY*thickness+dirY*length))
 
     if isTab and numDividers>0 and self.cfg.tabsymmetry==0 and not isDivider: # draw last for divider joints in side walls
       for dividerNumber in range(1,int(numDividers)+1):
@@ -371,14 +363,14 @@ class TabbedBox(object):
         Dx=Dx+firstholelenX
         Dy=Dy+firstholelenY
         hole.add(LineSegment(Dx, Dy))
-        Dx=Dx+notDirX*(self.cfg.thickness-self.cfg.kerf)
-        Dy=Dy+notDirY*(self.cfg.thickness-self.cfg.kerf)
+        Dx=Dx+notDirX*(thickness-self.cfg.kerf)
+        Dy=Dy+notDirY*(thickness-self.cfg.kerf)
         hole.add(LineSegment(Dx, Dy))
         Dx=Dx-firstholelenX
         Dy=Dy-firstholelenY
         hole.add(LineSegment(Dx, Dy))
-        Dx=Dx-notDirX*(self.cfg.thickness-self.cfg.kerf)
-        Dy=Dy-notDirY*(self.cfg.thickness-self.cfg.kerf)
+        Dx=Dx-notDirX*(thickness-self.cfg.kerf)
+        Dy=Dy-notDirY*(thickness-self.cfg.kerf)
         hole.add(LineSegment(Dx, Dy))
         paths.append(hole)
       # for dividerNumber in range(1,int(numDividers)+1):
@@ -403,17 +395,15 @@ class TabbedBox(object):
     paths.append(p)
     return paths
 
-  def make(self, X: float, Y: float, Z: float) -> List[List[Path]]:
+  def make(self, X: float, Y: float, Z: float, thickness: float) -> List[List[Path]]:
     # For code spacing consistency, we use two-character abbreviations for the six box faces,
     # where each abbreviation is the first and last letter of the face name:
     # tp=top, bm=bottom, ft=front, bk=back, lt=left, rt=right
 
-    # TODO(desbonne): Move thickness to make() arg.
-
     if self.cfg.inside: # if inside dimension selected correct values to outside dimension
-      X+=self.cfg.thickness*2
-      Y+=self.cfg.thickness*2
-      Z+=self.cfg.thickness*2
+      X+=thickness*2
+      Y+=thickness*2
+      Z+=thickness*2
 
     # Some internally generated cfg - mostly alternative names for better clarity
     self.cfg.dogbone = self.cfg.tabtype
@@ -574,7 +564,6 @@ class TabbedBox(object):
       if hasBm: pieces.append([cc[1], rr[0], X,Y, bmTabInfo, bmTabbed, bmFace])
       if hasRt: pieces.append([cc[3], rr[0], Z,Y, rtTabInfo, rtTabbed, rtFace])
       if hasFt: pieces.append([cc[5], rr[0], X,Z, ftTabInfo, ftTabbed, ftFace])
-
     groups = []
     for idx, piece in enumerate(pieces): # generate and draw each piece of the box
       (xs,xx,xy,xz)=piece[0]
@@ -587,8 +576,8 @@ class TabbedBox(object):
       a=tabs>>3&1; b=tabs>>2&1; c=tabs>>1&1; d=tabs&1 # extract tab status for each side
       tabbed=piece[5]
       atabs=tabbed>>3&1; btabs=tabbed>>2&1; ctabs=tabbed>>1&1; dtabs=tabbed&1 # extract tabbed flag for each side
-      xspacing=(X-self.cfg.thickness)/(self.cfg.divy+1)
-      yspacing=(Y-self.cfg.thickness)/(self.cfg.divx+1)
+      xspacing=(X-thickness)/(self.cfg.divy+1)
+      yspacing=(Y-thickness)/(self.cfg.divx+1)
       xholes = 1 if piece[6]<3 else 0
       yholes = 1 if piece[6]!=2 else 0
       wall = 1 if piece[6]>1 else 0
@@ -599,10 +588,10 @@ class TabbedBox(object):
       groups.append(sides)
 
       if self.cfg.schroff and railholes:
-        log("rail holes enabled on piece %d at (%d, %d)" % (idx, x+self.cfg.thickness,y+self.cfg.thickness))
+        log("rail holes enabled on piece %d at (%d, %d)" % (idx, x+thickness,y+thickness))
         log("abcd = (%d,%d,%d,%d)" % (a,b,c,d))
         log("dxdy = (%d,%d)" % (dx,dy))
-        rhxoffset = self.cfg.rail_mount_depth + self.cfg.thickness
+        rhxoffset = self.cfg.rail_mount_depth + thickness
         if idx == 1:
           rhx=x+rhxoffset
         elif idx == 3:
@@ -610,7 +599,7 @@ class TabbedBox(object):
         else:
           rhx=0
         log("rhxoffset = %d, rhx= %d" % (rhxoffset, rhx))
-        rystart=y+(self.cfg.rail_height/2)+self.cfg.thickness
+        rystart=y+(self.cfg.rail_height/2)+thickness
         if self.cfg.rows == 1:
           log("just one row this time, rystart = %d" % rystart)
           rh1y=rystart+self.cfg.rail_mount_centre_offset
@@ -630,29 +619,29 @@ class TabbedBox(object):
 
       # generate and draw the sides of each piece
       sides.extend( # side a
-        self.side((x,y), (d,a), (-b,a), atabs * (-self.cfg.thickness if a else self.cfg.thickness),
+        self.side(thickness, (x,y), (d,a), (-b,a), atabs * (-thickness if a else thickness),
                   dx, (1,0), a, 0,
                   (self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divx*yholes*atabs,
                   yspacing)
       )
       sides.extend(
-        self.side((x+dx,y),(-b,a),(-b,-c),btabs * (self.cfg.thickness if b else -self.cfg.thickness),dy,(0,1),b,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divy*xholes*btabs,xspacing)     # side b
+        self.side(thickness, (x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divy*xholes*btabs,xspacing)     # side b
       )
       if atabs:
           sides.extend(
-            self.side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (self.cfg.thickness if c else -self.cfg.thickness),dx,(-1,0),c,0,0,0) # side c
+            self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0) # side c
           )
       else:
           sides.extend(
-            self.side((x+dx,y+dy),(-b,-c),(d,-c),ctabs * (self.cfg.thickness if c else -self.cfg.thickness),dx,(-1,0),c,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divx*yholes*ctabs,yspacing) # side c
+            self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divx*yholes*ctabs,yspacing) # side c
           )
       if btabs:
         sides.extend(
-          self.side((x,y+dy),(d,-c),(d,a),dtabs * (-self.cfg.thickness if d else self.cfg.thickness),dy,(0,-1),d,0,0,0)      # side d
+          self.side(thickness, (x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0)      # side d
         )
       else:
         sides.extend(
-          self.side((x,y+dy),(d,-c),(d,a),dtabs * (-self.cfg.thickness if d else self.cfg.thickness),dy,(0,-1),d,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divy*xholes*dtabs,xspacing)      # side d
+          self.side(thickness, (x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divy*xholes*dtabs,xspacing)      # side d
         )
 
       if idx==0:
@@ -671,16 +660,16 @@ class TabbedBox(object):
           groups.append(tab)
           x=n*(self.cfg.spacing+X)  # root x co-ord for piece
           tab.extend(
-            self.side((x,y),(d,a),(-b,a),self.cfg.keydivfloor*atabs*(-self.cfg.thickness if a else self.cfg.thickness),dx,(1,0),a,1,0,0)          # side a
+            self.side(thickness, (x,y),(d,a),(-b,a),self.cfg.keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0)          # side a
           )
           tab.extend(
-            self.side((x+dx,y),(-b,a),(-b,-c),self.cfg.keydivwalls*btabs*(self.cfg.thickness if b else -self.cfg.thickness),dy,(0,1),b,1,self.cfg.divy*xholes,xspacing)    # side b
+            self.side(thickness, (x+dx,y),(-b,a),(-b,-c),self.cfg.keydivwalls*btabs*(thickness if b else -thickness),dy,(0,1),b,1,self.cfg.divy*xholes,xspacing)    # side b
           )
           tab.extend(
-            self.side((x+dx,y+dy),(-b,-c),(d,-c),self.cfg.keydivfloor*ctabs*(self.cfg.thickness if c else -self.cfg.thickness),dx,(-1,0),c,1,0,0) # side c
+            self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),self.cfg.keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
           )
           tab.extend(
-            self.side((x,y+dy),(d,-c),(d,a),self.cfg.keydivwalls*dtabs*(-self.cfg.thickness if d else self.cfg.thickness),dy,(0,-1),d,1,0,0)      # side d
+            self.side(thickness, (x,y+dy),(d,-c),(d,a),self.cfg.keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
           )
       elif idx==1:
         y=5*self.cfg.spacing+1*Y+3*Z  # root y co-ord for piece
@@ -690,15 +679,15 @@ class TabbedBox(object):
           groups.append(tab)
           x=n*(self.cfg.spacing+Z)  # root x co-ord for piece
           tab.extend(
-            self.side((x,y),(d,a),(-b,a),self.cfg.keydivwalls*atabs*(-self.cfg.thickness if a else self.cfg.thickness),dx,(1,0),a,1,self.cfg.divx*yholes,yspacing)          # side a
+            self.side(thickness, (x,y),(d,a),(-b,a),self.cfg.keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,self.cfg.divx*yholes,yspacing)          # side a
           )
           tab.extend(
-            self.side((x+dx,y),(-b,a),(-b,-c),self.cfg.keydivfloor*btabs*(self.cfg.thickness if b else -self.cfg.thickness),dy,(0,1),b,1,0,0)     # side b
+            self.side(thickness, (x+dx,y),(-b,a),(-b,-c),self.cfg.keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0)     # side b
           )
           tab.extend(
-            self.side((x+dx,y+dy),(-b,-c),(d,-c),self.cfg.keydivwalls*ctabs*(self.cfg.thickness if c else -self.cfg.thickness),dx,(-1,0),c,1,0,0) # side c
+            self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),self.cfg.keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
           )
           tab.extend(
-            self.side((x,y+dy),(d,-c),(d,a),self.cfg.keydivfloor*dtabs*(-self.cfg.thickness if d else self.cfg.thickness),dy,(0,-1),d,1,0,0)      # side d
+            self.side(thickness, (x,y+dy),(d,-c),(d,a),self.cfg.keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
           )
     return groups

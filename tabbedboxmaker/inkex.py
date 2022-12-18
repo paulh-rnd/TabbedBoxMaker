@@ -140,6 +140,14 @@ class InkexBoxMaker(inkex.Effect):
       tabbedboxmaker.add_args(self.arg_parser)
 
       # Add inkex plugin specific args.
+      arg_parser.add_argument('--length',action='store',type=float,
+        dest='length',default=100,help='Length of Box')
+      arg_parser.add_argument('--width',action='store',type=float,
+        dest='width',default=100,help='Width of Box')
+      arg_parser.add_argument('--depth',action='store',type=float,
+        dest='height',default=100,help='Height of Box')
+      arg_parser.add_argument('--thickness',action='store',type=float,
+        dest='thickness',default=10,help='Thickness of Material')
       self.arg_parser.add_argument('--hairline',action='store',type=int,
         dest='hairline',default=0,help='Line Thickness')
 
@@ -150,10 +158,10 @@ class InkexBoxMaker(inkex.Effect):
   def effect(self):
     global linethickness
 
-        # Get access to main SVG document element and get its dimensions.
+    # Get access to main SVG document element and get its dimensions.
     svg = self.document.getroot()
 
-        # Get the attributes:
+    # Get the attributes:
     widthDoc  = self.svg.unittouu(svg.get('width'))
     heightDoc = self.svg.unittouu(svg.get('height'))
 
@@ -235,7 +243,7 @@ class InkexBoxMaker(inkex.Effect):
     if error: exit()
 
     box = tabbedboxmaker.TabbedBox(self.options)
-    groups = box.make(X, Y, Z)
+    groups = box.make(X, Y, Z, self.options.thickness)
     svg_exporter = SvgExporter()
 
     for group in groups:
