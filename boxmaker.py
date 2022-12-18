@@ -1,4 +1,4 @@
-#! /usr/bin/env python -t
+#!/usr/bin/env python
 '''
 Generates Inkscape SVG file containing box components needed to
 CNC (laser/mill) cut a box with tabbed joints taking kerf and clearance into account
