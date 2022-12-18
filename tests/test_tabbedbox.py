@@ -249,7 +249,9 @@ class TestTabbedBox(unittest.TestCase):
                 expected_file = os.path.join(
                     expected_output_dir, case['label'] + '.svg'
                 )
-                expected = mask_panel_ids(open(expected_file, 'r').read())
+                expected = ''
+                with open(expected_file, 'r') as f:
+                    expected = mask_panel_ids(f.read())
 
                 tbm = tabbedboxmaker.inkex.InkexBoxMaker()
 
