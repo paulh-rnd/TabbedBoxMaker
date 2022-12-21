@@ -560,12 +560,13 @@ class TabbedBox(object):
           rhx=0
         log("rhxoffset = %d, rhx= %d" % (rhxoffset, rhx))
         rystart=y+(self.cfg.rail_height/2)+thickness
+        holes=[]
         if self.cfg.rows == 1:
           log("just one row this time, rystart = %d" % rystart)
           rh1y=rystart+self.cfg.rail_mount_centre_offset
           rh2y=rh1y+(self.cfg.row_centre_spacing-self.cfg.rail_mount_centre_offset)
-          groups.append(Circle(self.cfg.rail_mount_radius,(rhx,rh1y)))
-          groups.append(Circle(self.cfg.rail_mount_radius,(rhx,rh2y)))
+          holes.append(Circle(rhx, rh1y, self.cfg.rail_mount_radius))
+          holes.append(Circle(rhx, rh2y, self.cfg.rail_mount_radius))
         else:
           for n in range(0, self.cfg.rows):
             log("drawing row %d, rystart = %d" % (n+1, rystart))
@@ -573,10 +574,10 @@ class TabbedBox(object):
             # toward each other, ie. toward the centreline of the Schroff row
             rh1y=rystart+self.cfg.rail_mount_centre_offset
             rh2y=rh1y+self.cfg.row_centre_spacing-self.cfg.rail_mount_centre_offset
-            groups.append(Circle(self.cfg.rail_mount_radius,(rhx,rh1y)))
-            groups.append(Circle(self.cfg.rail_mount_radius,(rhx,rh2y)))
+            holes.append(Circle(rhx, rh1y, self.cfg.rail_mount_radius))
+            holes.append(Circle(rhx, rh2y, self.cfg.rail_mount_radius))
             rystart+=self.cfg.row_centre_spacing+self.cfg.row_spacing+self.cfg.rail_height
-
+        sides.extend(holes)
       # generate and draw the sides of each piece
       sides.extend( # side a
         self.side(thickness, (x,y), (d,a), (-b,a), atabs * (-thickness if a else thickness),
