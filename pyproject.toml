@@ -43,7 +43,7 @@ dependencies = [
 [tool.hatch.envs.default.scripts]
 cov = "pytest --cov-report=term-missing --cov-config=pyproject.toml --cov=tabbedboxmaker --cov=tests {args}"
 no-cov = "cov --no-cov {args}"
-tests = "python -munittest"
+tests = "python -munittest discover tests/"
 
 [[tool.hatch.envs.test.matrix]]
 python = ["37", "38", "39", "310", "311"]
