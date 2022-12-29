@@ -34,15 +34,6 @@ class AbstractShape(object):
     pass
 
 
-class Circle(AbstractShape):
-    def __init__(self, cX: float, cY: float, r: float) -> None:
-        self.centre = (cX, cY)
-        self.radius = r
-
-    def __repr__(self):
-        return f'{__class__}({self.initial_x}, {self.initial_y}, r={self.radius})'
-
-
 class PathSegment(object):
     def __init__(self, segtype: str, *args):
         self.type = segtype
@@ -70,61 +61,42 @@ class Path(AbstractShape):
         self.segments.extend(segs)
 
 
-def log(text):
-  if 'SCHROFF_LOG' in os.environ:
-    f = open(os.environ.get('SCHROFF_LOG'), 'a')
-    f.write(text + "\n")
-
-
-def add_args(arg_parser: argparse.ArgumentParser) -> None:
-    """Add ArgumentParser args needed to configure a boxmaker run"""
-    arg_parser.add_argument('--schroff',action='store',type=int,
-        dest='schroff',default=0,help='Enable Schroff mode')
-    arg_parser.add_argument('--rail_height',action='store',type=float,
-        dest='rail_height',default=10.0,help='Height of rail')
-    arg_parser.add_argument('--rail_mount_depth',action='store',type=float,
-        dest='rail_mount_depth',default=17.4,help='Depth at which to place hole for rail mount bolt')
-    arg_parser.add_argument('--rail_mount_centre_offset',action='store',type=float,
-        dest='rail_mount_centre_offset',default=0.0,help='How far toward row centreline to offset rail mount bolt (from rail centreline)')
-    arg_parser.add_argument('--rows',action='store',type=int,
-        dest='rows',default=0,help='Number of Schroff rows')
-    arg_parser.add_argument('--hp',action='store',type=int,
-        dest='hp',default=0,help='Width (TE/HP units) of Schroff rows')
-    arg_parser.add_argument('--row_spacing',action='store',type=float,
-        dest='row_spacing',default=10.0,help='Height of rail')
-    arg_parser.add_argument('--unit',action='store',type=str,
-        dest='unit',default='mm',help='Measure Units')
-    arg_parser.add_argument('--inside',action='store',type=int,
-        dest='inside',default=0,help='Int/Ext Dimension')
-    arg_parser.add_argument('--tab',action='store',type=float,
-        dest='tab',default=25,help='Nominal Tab Width')
-    arg_parser.add_argument('--equal',action='store',type=int,
-        dest='equal',default=0,help='Equal/Prop Tabs')
-    arg_parser.add_argument('--tabsymmetry',action='store',type=int,
-        dest='tabsymmetry',default=0,help='Tab style')
-    arg_parser.add_argument('--tabtype',action='store',type=int,
-        dest='tabtype',default=0,help='Tab type: regular or dogbone')
-    arg_parser.add_argument('--dimpleheight',action='store',type=float,
-        dest='dimpleheight',default=0,help='Tab Dimple Height')
-    arg_parser.add_argument('--dimplelength',action='store',type=float,
-        dest='dimplelength',default=0,help='Tab Dimple Tip Length')
-    arg_parser.add_argument('--kerf',action='store',type=float,
-        dest='kerf',default=0.5,help='Kerf (width of cut)')
-    arg_parser.add_argument('--style',action='store',type=int,
-        dest='style',default=1,help='Layout/Style')
-    arg_parser.add_argument('--spacing',action='store',type=float,
-        dest='spacing',default=1,help='Part Spacing')
-    arg_parser.add_argument('--boxtype',action='store',type=int,
-        dest='boxtype',default=1,help='Box type')
-    arg_parser.add_argument('--div_l',action='store',type=int,
-        dest='div_l',default=0,help='Dividers (Length axis)')
-    arg_parser.add_argument('--div_w',action='store',type=int,
-        dest='div_w',default=0,help='Dividers (Width axis)')
-    arg_parser.add_argument('--keydiv',action='store',type=int,
-        dest='keydiv',default=3,help='Key dividers into walls/floor')
-
-
 class TabbedBox(object):
+
+  @staticmethod
+  def add_args(arg_parser: argparse.ArgumentParser) -> None:
+        """Add ArgumentParser args needed to configure a boxmaker run"""
+        arg_parser.add_argument('--unit',action='store',type=str,
+            dest='unit',default='mm',help='Measure Units')
+        arg_parser.add_argument('--inside',action='store',type=int,
+            dest='inside',default=0,help='Int/Ext Dimension')
+        arg_parser.add_argument('--tab',action='store',type=float,
+            dest='tab',default=25,help='Nominal Tab Width')
+        arg_parser.add_argument('--equal',action='store',type=int,
+            dest='equal',default=0,help='Equal/Prop Tabs')
+        arg_parser.add_argument('--tabsymmetry',action='store',type=int,
+            dest='tabsymmetry',default=0,help='Tab style')
+        arg_parser.add_argument('--tabtype',action='store',type=int,
+            dest='tabtype',default=0,help='Tab type: regular or dogbone')
+        arg_parser.add_argument('--dimpleheight',action='store',type=float,
+            dest='dimpleheight',default=0,help='Tab Dimple Height')
+        arg_parser.add_argument('--dimplelength',action='store',type=float,
+            dest='dimplelength',default=0,help='Tab Dimple Tip Length')
+        arg_parser.add_argument('--kerf',action='store',type=float,
+            dest='kerf',default=0.5,help='Kerf (width of cut)')
+        arg_parser.add_argument('--style',action='store',type=int,
+            dest='style',default=1,help='Layout/Style')
+        arg_parser.add_argument('--spacing',action='store',type=float,
+            dest='spacing',default=1,help='Part Spacing')
+        arg_parser.add_argument('--boxtype',action='store',type=int,
+            dest='boxtype',default=1,help='Box type')
+        arg_parser.add_argument('--div_l',action='store',type=int,
+            dest='div_l',default=0,help='Dividers (Length axis)')
+        arg_parser.add_argument('--div_w',action='store',type=int,
+            dest='div_w',default=0,help='Dividers (Width axis)')
+        arg_parser.add_argument('--keydiv',action='store',type=int,
+            dest='keydiv',default=3,help='Key dividers into walls/floor')
+
   def __init__(self, args: argparse.Namespace=None) -> None:
 
       if args is not None:
@@ -383,9 +355,6 @@ class TabbedBox(object):
     elif self.cfg.boxtype==6: hasTp=hasFt=hasBk=hasRt=False
     # else self.cfg.boxtype==1, full box, has all sides
 
-    initOffsetX=0
-    initOffsetY=0
-
     # Determine where the tabs go based on the tab style
     if self.cfg.tabsymmetry==2:     # Antisymmetric (deprecated)
       tpTabInfo=0b0110
@@ -526,129 +495,107 @@ class TabbedBox(object):
       if hasFt: pieces.append([cc[5], rr[0], X,Z, ftTabInfo, ftTabbed, ftFace])
     groups = []
     for idx, piece in enumerate(pieces): # generate and draw each piece of the box
-      (xs,xx,xy,xz)=piece[0]
-      (ys,yx,yy,yz)=piece[1]
-      x=xs*self.cfg.spacing+xx*X+xy*Y+xz*Z+initOffsetX  # root x co-ord for piece
-      y=ys*self.cfg.spacing+yx*X+yy*Y+yz*Z+initOffsetY  # root y co-ord for piece
-      dx=piece[2]
-      dy=piece[3]
-      tabs=piece[4]
-      a=tabs>>3&1; b=tabs>>2&1; c=tabs>>1&1; d=tabs&1 # extract tab status for each side
-      tabbed=piece[5]
-      atabs=tabbed>>3&1; btabs=tabbed>>2&1; ctabs=tabbed>>1&1; dtabs=tabbed&1 # extract tabbed flag for each side
-      xspacing=(X-thickness)/(self.cfg.divy+1)
-      yspacing=(Y-thickness)/(self.cfg.divx+1)
-      xholes = 1 if piece[6]<3 else 0
-      yholes = 1 if piece[6]!=2 else 0
-      wall = 1 if piece[6]>1 else 0
-      floor = 1 if piece[6]==1 else 0
-      railholes = 1 if piece[6]==3 else 0
+        groups.extend(self.piece(X, Y, Z, thickness, idx, *piece))
+    return groups
 
-      sides = []
-      groups.append(sides)
+  def piece(
+      self, X: float, Y: float, Z: float, thickness: float, idx: int,
+      rootx: List[float], rooty: List[float], dx: float, dy: float,
+      tabs: int, tabbed: int, pieceType: int,
+  ):
 
-      if self.cfg.schroff and railholes:
-        log("rail holes enabled on piece %d at (%d, %d)" % (idx, x+thickness,y+thickness))
-        log("abcd = (%d,%d,%d,%d)" % (a,b,c,d))
-        log("dxdy = (%d,%d)" % (dx,dy))
-        rhxoffset = self.cfg.rail_mount_depth + thickness
-        if idx == 1:
-          rhx=x+rhxoffset
-        elif idx == 3:
-          rhx=x-rhxoffset+dx
-        else:
-          rhx=0
-        log("rhxoffset = %d, rhx= %d" % (rhxoffset, rhx))
-        rystart=y+(self.cfg.rail_height/2)+thickness
-        holes=[]
-        if self.cfg.rows == 1:
-          log("just one row this time, rystart = %d" % rystart)
-          rh1y=rystart+self.cfg.rail_mount_centre_offset
-          rh2y=rh1y+(self.cfg.row_centre_spacing-self.cfg.rail_mount_centre_offset)
-          holes.append(Circle(rhx, rh1y, self.cfg.rail_mount_radius))
-          holes.append(Circle(rhx, rh2y, self.cfg.rail_mount_radius))
-        else:
-          for n in range(0, self.cfg.rows):
-            log("drawing row %d, rystart = %d" % (n+1, rystart))
-            # if holes areo ffset (eg. Vector T-strut rails), they should be offset
-            # toward each other, ie. toward the centreline of the Schroff row
-            rh1y=rystart+self.cfg.rail_mount_centre_offset
-            rh2y=rh1y+self.cfg.row_centre_spacing-self.cfg.rail_mount_centre_offset
-            holes.append(Circle(rhx, rh1y, self.cfg.rail_mount_radius))
-            holes.append(Circle(rhx, rh2y, self.cfg.rail_mount_radius))
-            rystart+=self.cfg.row_centre_spacing+self.cfg.row_spacing+self.cfg.rail_height
-        sides.extend(holes)
-      # generate and draw the sides of each piece
-      sides.extend( # side a
-        self.side(thickness, (x,y), (d,a), (-b,a), atabs * (-thickness if a else thickness),
-                  dx, (1,0), a, 0,
-                  (self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divx*yholes*atabs,
-                  yspacing)
-      )
+    (xs,xx,xy,xz)=rootx
+    (ys,yx,yy,yz)=rooty
+
+    initOffsetX=0  # TODO: These look redundant, remove?
+    initOffsetY=0
+
+    x=xs*self.cfg.spacing+xx*X+xy*Y+xz*Z+initOffsetX  # root x co-ord for piece
+    y=ys*self.cfg.spacing+yx*X+yy*Y+yz*Z+initOffsetY  # root y co-ord for piece
+    a=tabs>>3&1; b=tabs>>2&1; c=tabs>>1&1; d=tabs&1 # extract tab status for each side
+    atabs=tabbed>>3&1; btabs=tabbed>>2&1; ctabs=tabbed>>1&1; dtabs=tabbed&1 # extract tabbed flag for each side
+    xspacing=(X-thickness)/(self.cfg.divy+1)
+    yspacing=(Y-thickness)/(self.cfg.divx+1)
+    xholes = 1 if pieceType<3 else 0
+    yholes = 1 if pieceType!=2 else 0
+    wall = 1 if pieceType>1 else 0
+    floor = 1 if pieceType==1 else 0
+
+    groups = []
+    sides = []
+    groups.append(sides)
+
+    # generate and draw the sides of each piece
+    sides.extend( # side a
+      self.side(thickness, (x,y), (d,a), (-b,a), atabs * (-thickness if a else thickness),
+                dx, (1,0), a, 0,
+                (self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divx*yholes*atabs,
+                yspacing)
+    )
+    sides.extend(
+      self.side(thickness, (x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divy*xholes*btabs,xspacing)     # side b
+    )
+    if atabs:
+        sides.extend(
+          self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0) # side c
+        )
+    else:
+        sides.extend(
+          self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divx*yholes*ctabs,yspacing) # side c
+        )
+    if btabs:
       sides.extend(
-        self.side(thickness, (x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divy*xholes*btabs,xspacing)     # side b
+        self.side(thickness, (x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0)      # side d
       )
-      if atabs:
-          sides.extend(
-            self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0) # side c
-          )
-      else:
-          sides.extend(
-            self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divx*yholes*ctabs,yspacing) # side c
-          )
-      if btabs:
-        sides.extend(
-          self.side(thickness, (x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0)      # side d
-        )
-      else:
-        sides.extend(
-          self.side(thickness, (x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divy*xholes*dtabs,xspacing)      # side d
-        )
+    else:
+      sides.extend(
+        self.side(thickness, (x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(self.cfg.keydivfloor|wall) * (self.cfg.keydivwalls|floor) * self.cfg.divy*xholes*dtabs,xspacing)      # side d
+      )
 
-      if idx==0:
-        # remove tabs from dividers if not required
-        if not self.cfg.keydivfloor:
-          a=c=1
-          atabs=ctabs=0
-        if not self.cfg.keydivwalls:
-          b=d=1
-          btabs=dtabs=0
+    if idx==0:
+      # remove tabs from dividers if not required
+      if not self.cfg.keydivfloor:
+        a=c=1
+        atabs=ctabs=0
+      if not self.cfg.keydivwalls:
+        b=d=1
+        btabs=dtabs=0
 
-        y=4*self.cfg.spacing+1*Y+2*Z  # root y co-ord for piece
-        for n in range(0,self.cfg.divx): # generate X dividers
-          #group = newGroup(self)
-          tab = []
-          groups.append(tab)
-          x=n*(self.cfg.spacing+X)  # root x co-ord for piece
-          tab.extend(
-            self.side(thickness, (x,y),(d,a),(-b,a),self.cfg.keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0)          # side a
-          )
-          tab.extend(
-            self.side(thickness, (x+dx,y),(-b,a),(-b,-c),self.cfg.keydivwalls*btabs*(thickness if b else -thickness),dy,(0,1),b,1,self.cfg.divy*xholes,xspacing)    # side b
-          )
-          tab.extend(
-            self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),self.cfg.keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
-          )
-          tab.extend(
-            self.side(thickness, (x,y+dy),(d,-c),(d,a),self.cfg.keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
-          )
-      elif idx==1:
-        y=5*self.cfg.spacing+1*Y+3*Z  # root y co-ord for piece
-        for n in range(0,self.cfg.divy): # generate Y dividers
-          #group = newGroup(self)
-          tab = []
-          groups.append(tab)
-          x=n*(self.cfg.spacing+Z)  # root x co-ord for piece
-          tab.extend(
-            self.side(thickness, (x,y),(d,a),(-b,a),self.cfg.keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,self.cfg.divx*yholes,yspacing)          # side a
-          )
-          tab.extend(
-            self.side(thickness, (x+dx,y),(-b,a),(-b,-c),self.cfg.keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0)     # side b
-          )
-          tab.extend(
-            self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),self.cfg.keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
-          )
-          tab.extend(
-            self.side(thickness, (x,y+dy),(d,-c),(d,a),self.cfg.keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
-          )
+      y=4*self.cfg.spacing+1*Y+2*Z  # root y co-ord for piece
+      for n in range(0,self.cfg.divx): # generate X dividers
+        #group = newGroup(self)
+        tab = []
+        groups.append(tab)
+        x=n*(self.cfg.spacing+X)  # root x co-ord for piece
+        tab.extend(
+          self.side(thickness, (x,y),(d,a),(-b,a),self.cfg.keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0)          # side a
+        )
+        tab.extend(
+          self.side(thickness, (x+dx,y),(-b,a),(-b,-c),self.cfg.keydivwalls*btabs*(thickness if b else -thickness),dy,(0,1),b,1,self.cfg.divy*xholes,xspacing)    # side b
+        )
+        tab.extend(
+          self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),self.cfg.keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
+        )
+        tab.extend(
+          self.side(thickness, (x,y+dy),(d,-c),(d,a),self.cfg.keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
+        )
+    elif idx==1:
+      y=5*self.cfg.spacing+1*Y+3*Z  # root y co-ord for piece
+      for n in range(0,self.cfg.divy): # generate Y dividers
+        #group = newGroup(self)
+        tab = []
+        groups.append(tab)
+        x=n*(self.cfg.spacing+Z)  # root x co-ord for piece
+        tab.extend(
+          self.side(thickness, (x,y),(d,a),(-b,a),self.cfg.keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,self.cfg.divx*yholes,yspacing)          # side a
+        )
+        tab.extend(
+          self.side(thickness, (x+dx,y),(-b,a),(-b,-c),self.cfg.keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0)     # side b
+        )
+        tab.extend(
+          self.side(thickness, (x+dx,y+dy),(-b,-c),(d,-c),self.cfg.keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
+        )
+        tab.extend(
+          self.side(thickness, (x,y+dy),(d,-c),(d,a),self.cfg.keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
+        )
     return groups

@@ -21,6 +21,7 @@ import gettext
 import inkex
 import os
 import tabbedboxmaker
+import tabbedboxmaker.schroff
 
 _ = gettext.gettext
 
@@ -102,8 +103,7 @@ class InkexBoxMaker(inkex.Effect):
   def __init__(self):
       inkex.Effect.__init__(self)
 
-      # Add common boxmaker args.
-      tabbedboxmaker.add_args(self.arg_parser)
+      tabbedboxmaker.schroff.SchroffBox.add_args(self.arg_parser)
 
       # Add inkex plugin specific args.
       self.arg_parser.add_argument('--length',action='store',type=float,
@@ -142,6 +142,9 @@ class InkexBoxMaker(inkex.Effect):
 
     unit = self.options.unit
 
+    ## minimally different behaviour for schroffmaker.inx vs. boxmaker.inx
+    ## essentially schroffmaker.inx is just an alternate interface with different
+    ## default settings, some options removed, and a tiny amount of extra logic
     if self.options.schroff:
         self.options.rail_height = self._to_svg_units(self.options.rail_height, unit)
         self.options.row_centre_spacing = self._to_svg_units(122.5, unit)  # TODO(manuel): Fixed number with variable unit? Feels wrong.
@@ -150,11 +153,6 @@ class InkexBoxMaker(inkex.Effect):
         self.options.rail_mount_centre_offset = self._to_svg_units(self.options.rail_mount_centre_offset, unit)
         self.options.rail_mount_radius=self._to_svg_units(2.5, unit) # TODO(manuel): Same - fixed number with variable unit.
 
-    ## minimally different behaviour for schroffmaker.inx vs. boxmaker.inx
-    ## essentially schroffmaker.inx is just an alternate interface with different
-    ## default settings, some options removed, and a tiny amount of extra logic
-    if self.options.schroff:
-        ## schroffmaker.inx
         X = self._to_svg_units(self.options.hp * 5.08, unit) # TODO(manuel): Same - fixed number with variable unit.
         # 122.5mm vertical distance between mounting hole centres of 3U Schroff panels
         row_height = self.options.rows * (self.options.row_centre_spacing + self.options.rail_height)
@@ -208,7 +206,7 @@ class InkexBoxMaker(inkex.Effect):
 
     if error: exit()
 
-    box = tabbedboxmaker.TabbedBox(self.options)
+    box = tabbedboxmaker.schroff.SchroffBox(self.options)
     groups = box.make(X, Y, Z, self.options.thickness)
     svg_exporter = SvgExporter()
 
