@@ -61,6 +61,16 @@ class Path(AbstractShape):
         self.segments.extend(segs)
 
 
+def default_tab_width(X: float, Y: float, Z: float, thickness: float):
+    """Calculate a default tab length based on the dimensions of the box"""
+
+    # A rather arbitrary value being the smaller of 1/3 the min dimension or
+    # three times the thickness.
+
+    min_dim = min(X, Y, Z)
+    return min(min_dim/3, thickness*3)
+
+
 class TabbedBox(object):
 
   @staticmethod
@@ -71,7 +81,7 @@ class TabbedBox(object):
         arg_parser.add_argument('--inside',action='store',type=int,
             dest='inside',default=0,help='Int/Ext Dimension')
         arg_parser.add_argument('--tab',action='store',type=float,
-            dest='tab',default=25,help='Nominal Tab Width')
+            dest='tab', help='Nominal Tab Width (default based on box dimensions)')
         arg_parser.add_argument('--equal',action='store',type=int,
             dest='equal',default=0,help='Equal/Prop Tabs')
         arg_parser.add_argument('--tabsymmetry',action='store',type=int,
@@ -139,13 +149,15 @@ class TabbedBox(object):
 
     halfkerf = self.cfg.kerf/2
 
+    tab_width = self.cfg.tab if self.cfg.tab is not None else self.cfg.default_tab
+
     if (self.cfg.tabsymmetry==1):        # waffle-block style rotationally symmetric tabs
-        divisions=int((length-2*thickness)/self.cfg.tab)
+        divisions=int((length-2*thickness)/tab_width)
         if divisions%2: divisions+=1      # make divs even
         divisions=float(divisions)
         tabs=divisions/2                  # tabs for side
     else:
-        divisions=int(length/self.cfg.tab)
+        divisions=int(length/tab_width)
         if not divisions%2: divisions-=1  # make divs odd
         divisions=float(divisions)
         tabs=(divisions-1)/2              # tabs for side
@@ -155,8 +167,8 @@ class TabbedBox(object):
     elif self.cfg.equalTabs:
       gapWidth=tabWidth=length/divisions
     else:
-      tabWidth=self.cfg.tab
-      gapWidth=(length-tabs*self.cfg.tab)/(divisions-tabs)
+      tabWidth=tab_width
+      gapWidth=(length-tabs*tab_width)/(divisions-tabs)
 
     if isTab:                 # kerf correction
       gapWidth-=self.cfg.kerf
@@ -336,6 +348,8 @@ class TabbedBox(object):
       X+=thickness*2
       Y+=thickness*2
       Z+=thickness*2
+
+    self.cfg.default_tab = default_tab_width(X, Y, Z, thickness)
 
     # Some internally generated cfg - mostly alternative names for better clarity
     self.cfg.dogbone = self.cfg.tabtype

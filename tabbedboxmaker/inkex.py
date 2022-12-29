@@ -168,7 +168,6 @@ class InkexBoxMaker(inkex.Effect):
 
     self.options.kerf = self._to_svg_units(self.options.kerf, self.options.unit)
     self.options.thickness = self._to_svg_units(self.options.thickness, unit)
-    self.options.tab = self._to_svg_units(self.options.tab, unit)
     self.options.spacing = self._to_svg_units(self.options.spacing, unit)
 
     # check input values mainly to avoid python errors
@@ -182,12 +181,14 @@ class InkexBoxMaker(inkex.Effect):
     if max(X,Y,Z)>max(widthDoc,heightDoc)*10: # crude test
       inkex.errormsg(_('Error: Dimensions Too Large'))
       error=1
-    if min(X,Y,Z)<3*self.options.tab:
-      inkex.errormsg(_('Error: Tab size too large'))
-      error=1
-    if self.options.tab<self.options.thickness:
-      inkex.errormsg(_('Error: Tab size too small'))
-      error=1
+    if self.options.tab is not None:
+        self.options.tab = self._to_svg_units(self.options.tab, unit)
+        if min(X,Y,Z)<3*self.options.tab:
+            inkex.errormsg(_('Error: Tab size too large'))
+            error=1
+        if self.options.tab<self.options.thickness:
+            inkex.errormsg(_('Error: Tab size too small'))
+            error=1
     if self.options.thickness==0:
       inkex.errormsg(_('Error: Thickness is zero'))
       error=1

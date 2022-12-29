@@ -236,7 +236,16 @@ class TestTabbedBox(unittest.TestCase):
                     '--boxtype=2', '--div_l=1', '--div_w=1', '--keydiv=3',
                     '--spacing=1'],
             },
-
+            {
+                'label': 'default_tabs',
+                'args': [
+                    '--unit=mm', '--inside=1', '--length=80', '--width=100',
+                    '--depth=40', '--equal=0', '--tabtype=0',
+                    '--tabsymmetry=0', '--dimpleheight=0', '--dimplelength=0',
+                    '--hairline=1', '--thickness=3', '--kerf=0', '--style=1',
+                    '--boxtype=1', '--div_l=0', '--div_w=0', '--keydiv=1',
+                    '--spacing=1'],
+            },
         ]
 
         for case in cases:
