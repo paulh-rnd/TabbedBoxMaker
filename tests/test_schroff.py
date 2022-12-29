@@ -51,9 +51,9 @@ blank_svg=b'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 def mask_panel_ids(svgin: str) -> str:
     return re.sub(r'"panel\d+"', '"panelTEST"', svgin)
 
-class TestTabbedBox(unittest.TestCase):
+class TestSchroffBox(unittest.TestCase):
 
-    def test_tabbed(self):
+    def test_schroff(self):
         # See schroff.inx for arg descriptions
         cases = [
             {
@@ -128,5 +128,5 @@ class TestTabbedBox(unittest.TestCase):
                 output = mask_panel_ids(outfh.getvalue().decode('utf-8'))
 
                 # Set self.maxDiff to None to see full diff.
-                self.maxDiff = None
+                #self.maxDiff = None
                 self.assertEqual(expected, output)
