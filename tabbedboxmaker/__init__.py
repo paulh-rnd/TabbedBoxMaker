@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from typing import List
+from typing import List, Tuple
 
 import argparse
 import gettext
@@ -43,6 +43,18 @@ class LineSegment(PathSegment):
     def __init__(self, toX: float, toY: float) -> None:
         super().__init__('line', toX, toY)
 
+    def extend_boundingbox(self, boundingbox) -> Tuple[Tuple[float,float], Tuple[float,float]]:
+        # bounding box  is a nested 2-tuple:
+        # ( (minx, miny), (maxx, maxy) )
+        sx = self.args[0]
+        sy = self.args[1]
+        return (
+            (min(sx, boundingbox[0][0]), min(sy, boundingbox[0][1])),
+            (max(sx, boundingbox[1][0]), max(sy, boundingbox[1][1])),
+        )
+
+    def translate(self, dx: float, dy: float):
+        self.args = (self.args[0]+dx, self.args[1]+dy)
 
 class Path(AbstractShape):
     """An abstract path object"""
@@ -60,6 +72,17 @@ class Path(AbstractShape):
     def add_multiple(self, segs: List[PathSegment]) -> None:
         self.segments.extend(segs)
 
+    def boundingbox(self) -> (float, float, float, float):
+        boundingbox = ((self.initial_x, self.initial_y), (self.initial_x, self.initial_y))
+        for s in self.segments:
+            boundingbox = s.extend_boundingbox(boundingbox)
+        return boundingbox
+
+    def translate(self, dx: float, dy: float):
+        self.initial_x += dx;
+        self.initial_y += dy;
+        for s in self.segments:
+            s.translate(dx, dy)
 
 def default_tab_width(X: float, Y: float, Z: float, thickness: float):
     """Calculate a default tab length based on the dimensions of the box"""
