@@ -441,8 +441,8 @@ class BoxMaker(inkex.Effect):
     nomTab = self.svg.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
     tabSymmetry=self.options.tabsymmetry
-    dimpleHeight=self.options.dimpleheight
-    dimpleLength=self.options.dimplelength
+    dimpleHeight=self.svg.unittouu( str(self.options.dimpleheight) + unit )
+    dimpleLength=self.svg.unittouu( str(self.options.dimplelength) + unit )
     dogbone = 1 if self.options.tabtype == 1 else 0
     layout=self.options.style
     spacing = self.svg.unittouu( str(self.options.spacing)  + unit )
