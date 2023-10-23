@@ -433,10 +433,10 @@ class BoxMaker(inkex.Effect):
         Y = row_height + row_spacing_total
     else:
         ## boxmaker.inx
-        X = self.svg.unittouu( str(self.options.length + kerf)  + unit )
-        Y = self.svg.unittouu( str(self.options.width + kerf) + unit )
+        X = self.svg.unittouu( str(self.options.length + self.options.kerf)  + unit )
+        Y = self.svg.unittouu( str(self.options.width + self.options.kerf) + unit )
 
-    Z = self.svg.unittouu( str(self.options.height + kerf)  + unit )
+    Z = self.svg.unittouu( str(self.options.height + self.options.kerf)  + unit )
     thickness = self.svg.unittouu( str(self.options.thickness)  + unit )
     nomTab = self.svg.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
