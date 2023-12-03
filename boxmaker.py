@@ -130,7 +130,7 @@ def dimpleStr(tabVector,vectorX,vectorY,dirX,dirY,dirxN,diryN,ddir,isTab):
     ds+='L '+str(Vxd)+','+str(Vyd)+' '
   return ds
 
-def side(group,root,startOffset,endOffset,tabVec,length,direction,isTab,isDivider,numDividers,dividerSpacing):
+def side(group,root,startOffset,endOffset,tabVec,prevTab,length,direction,isTab,isDivider,numDividers,dividerSpacing):
   rootX, rootY = root
   startOffsetX, startOffsetY = startOffset
   endOffsetX, endOffsetY = endOffset
@@ -175,13 +175,13 @@ def side(group,root,startOffset,endOffset,tabVec,length,direction,isTab,isDivide
   if (tabSymmetry==1):
     dividerEdgeOffsetX = dirX*thickness;
     #dividerEdgeOffsetY = ;
-    vectorX = rootX + (startOffsetX*thickness if notDirX else 0)
-    vectorY = rootY + (startOffsetY*thickness if notDirY else 0)
+    vectorX = rootX + (0 if dirX and prevTab else startOffsetX*thickness)
+    vectorY = rootY + (0 if dirY and prevTab else startOffsetY*thickness)
     s='M '+str(vectorX)+','+str(vectorY)+' '
     vectorX = rootX+(startOffsetX if startOffsetX else dirX)*thickness
     vectorY = rootY+(startOffsetY if startOffsetY else dirY)*thickness
-    if notDirX: endOffsetX=0
-    if notDirY: endOffsetY=0
+    if notDirX and tabVec: endOffsetX=0
+    if notDirY and tabVec: endOffsetY=0
   else:
     (vectorX,vectorY)=(rootX+startOffsetX*thickness,rootY+startOffsetY*thickness)
     dividerEdgeOffsetX=dirY*thickness
@@ -433,16 +433,16 @@ class BoxMaker(inkex.Effect):
         Y = row_height + row_spacing_total
     else:
         ## boxmaker.inx
-        X = self.svg.unittouu( str(self.options.length + kerf)  + unit )
-        Y = self.svg.unittouu( str(self.options.width + kerf) + unit )
+        X = self.svg.unittouu( str(self.options.length + self.options.kerf)  + unit )
+        Y = self.svg.unittouu( str(self.options.width + self.options.kerf) + unit )
 
-    Z = self.svg.unittouu( str(self.options.height + kerf)  + unit )
+    Z = self.svg.unittouu( str(self.options.height + self.options.kerf)  + unit )
     thickness = self.svg.unittouu( str(self.options.thickness)  + unit )
     nomTab = self.svg.unittouu( str(self.options.tab) + unit )
     equalTabs=self.options.equal
     tabSymmetry=self.options.tabsymmetry
-    dimpleHeight=self.options.dimpleheight
-    dimpleLength=self.options.dimplelength
+    dimpleHeight=self.svg.unittouu( str(self.options.dimpleheight) + unit )
+    dimpleLength=self.svg.unittouu( str(self.options.dimplelength) + unit )
     dogbone = 1 if self.options.tabtype == 1 else 0
     layout=self.options.style
     spacing = self.svg.unittouu( str(self.options.spacing)  + unit )
@@ -698,16 +698,16 @@ class BoxMaker(inkex.Effect):
             rystart+=row_centre_spacing+row_spacing+rail_height
 
       # generate and draw the sides of each piece
-      side(group,(x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dx,(1,0),a,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*atabs,yspacing)          # side a
-      side(group,(x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),dy,(0,1),b,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*btabs,xspacing)     # side b
+      side(group,(x,y),(d,a),(-b,a),atabs * (-thickness if a else thickness),dtabs,dx,(1,0),a,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*atabs,yspacing)          # side a
+      side(group,(x+dx,y),(-b,a),(-b,-c),btabs * (thickness if b else -thickness),atabs,dy,(0,1),b,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*btabs,xspacing)     # side b
       if atabs:
-        side(group,(x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,0,0) # side c
+        side(group,(x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),btabs,dx,(-1,0),c,0,0,0) # side c
       else:
-        side(group,(x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),dx,(-1,0),c,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*ctabs,yspacing) # side c
+        side(group,(x+dx,y+dy),(-b,-c),(d,-c),ctabs * (thickness if c else -thickness),btabs,dx,(-1,0),c,0,(keydivfloor|wall) * (keydivwalls|floor) * divx*yholes*ctabs,yspacing) # side c
       if btabs:
-        side(group,(x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,0,0)      # side d
+        side(group,(x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),ctabs,dy,(0,-1),d,0,0,0)      # side d
       else:
-        side(group,(x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing)      # side d
+        side(group,(x,y+dy),(d,-c),(d,a),dtabs * (-thickness if d else thickness),ctabs,dy,(0,-1),d,0,(keydivfloor|wall) * (keydivwalls|floor) * divy*xholes*dtabs,xspacing)      # side d
 
       if idx==0:
         # remove tabs from dividers if not required
@@ -722,19 +722,19 @@ class BoxMaker(inkex.Effect):
         for n in range(0,divx): # generate X dividers
           group = newGroup(self)
           x=n*(spacing+X)  # root x co-ord for piece      
-          side(group,(x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dx,(1,0),a,1,0,0)          # side a
-          side(group,(x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if b else -thickness),dy,(0,1),b,1,divy*xholes,xspacing)    # side b
-          side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
-          side(group,(x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
+          side(group,(x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dtabs,dx,(1,0),a,1,0,0)          # side a
+          side(group,(x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if b else -thickness),atabs,dy,(0,1),b,1,divy*xholes,xspacing)    # side b
+          side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),btabs,dx,(-1,0),c,1,0,0) # side c
+          side(group,(x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),ctabs,dy,(0,-1),d,1,0,0)      # side d
       elif idx==1:
         y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
         for n in range(0,divy): # generate Y dividers
           group = newGroup(self)
           x=n*(spacing+Z)  # root x co-ord for piece
-          side(group,(x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dx,(1,0),a,1,divx*yholes,yspacing)          # side a
-          side(group,(x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),dy,(0,1),b,1,0,0)     # side b
-          side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),dx,(-1,0),c,1,0,0) # side c
-          side(group,(x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),dy,(0,-1),d,1,0,0)      # side d
+          side(group,(x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dtabs,dx,(1,0),a,1,divx*yholes,yspacing)          # side a
+          side(group,(x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),atabs,dy,(0,1),b,1,0,0)     # side b
+          side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),btabs,dx,(-1,0),c,1,0,0) # side c
+          side(group,(x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),ctabs,dy,(0,-1),d,1,0,0)      # side d
 
 # Create effect instance and apply it.
 effect = BoxMaker()
