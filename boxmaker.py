@@ -45,7 +45,12 @@ v1.0 - 2020-06-17 by Paul Hutchison
 v1.1 - 2021-08-09 by Paul Hutchison
  - Fixed for current Inkscape release version 1.1 - thanks to PR from https://github.com/roastedneutrons
 
-This program is free software: you can redistribute it and/or modify
+v1.2 - 2023-12-04 contributed by [@mausmaux](https://github.com/mausmaux) - See [PR59](https://github.com/paulh-rnd/TabbedBoxMaker/pull/59)
+ - Fixed bug with unit conversion for the kerf parameter.
+ - Fixed bug with dimple unit conversion.
+ - Fixed boxes which have omitted sides are incorrectly drawn when using the rotationally symmetric mode.
+
+ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -58,7 +63,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
-__version__ = "1.0" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
+__version__ = "1.2" ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
 import os,sys,inkex,simplestyle,gettext,math
 from copy import deepcopy
@@ -91,18 +96,6 @@ def getCircle(r, c):
     log("putting circle at (%d,%d)" % (cx,cy))
     circle = inkex.PathElement.arc((cx, cy), r)
     circle.style = { 'stroke': '#000000', 'stroke-width': str(linethickness), 'fill': 'none' }
-
-    # ell_attribs = {'style':simplestyle.formatStyle(style),
-    #     inkex.addNS('cx','sodipodi')        :str(cx),
-    #     inkex.addNS('cy','sodipodi')        :str(cy),
-    #     inkex.addNS('rx','sodipodi')        :str(r),
-    #     inkex.addNS('ry','sodipodi')        :str(r),
-    #     inkex.addNS('start','sodipodi')     :str(0),
-    #     inkex.addNS('end','sodipodi')       :str(2*math.pi),
-    #     inkex.addNS('open','sodipodi')      :'true', #all ellipse sectors we will draw are open
-    #     inkex.addNS('type','sodipodi')      :'arc',
-    #     'transform'                         :'' }
-    #inkex.etree.SubElement(parent, inkex.addNS('path','svg'), ell_attribs )
     return circle
 
 def dimpleStr(tabVector,vectorX,vectorY,dirX,dirY,dirxN,diryN,ddir,isTab):
