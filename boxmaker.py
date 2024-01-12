@@ -69,8 +69,6 @@ import gettext
 import io
 import os
 from copy import deepcopy
-from socketserver import ForkingTCPServer
-from tkinter import font
 
 import inkex
 import inkex.command
@@ -86,25 +84,21 @@ os.environ["SCHROFF_LOG"] = "/tmp/schroff.log"
 def log(text):
     log_pth = os.environ.get("SCHROFF_LOG")
     if log_pth:
-        f = open(log_pth, "a")
-        f.write(text + "\n")
-        f.close()
+        with open(log_pth, "a") as f:
+            f.write(text + "\n")
 
 
-log("")
-
-
-def newGroup(canvas):
+def newGroup(canvas, group_id=None):
     # Create a new group and add element created from line string
-    panelId = canvas.svg.get_unique_id("panel")
+    if group_id is None:
+        panelId = canvas.svg.get_unique_id("panel")
+    else:
+        panelId = group_id
     group = canvas.svg.get_current_layer().add(inkex.Group(id=panelId))
     return group
 
 
 def getLine(XYstring, color="#000000"):
-    if color == "blue":
-        log(f"getLine: {XYstring}")
-
     line = inkex.PathElement()
     line.style = {
         "stroke": color,
@@ -130,31 +124,48 @@ def getCircle(r, c):
     return circle
 
 
-def addText(s: str, x: float, y: float):
+def addTextOneLine(s: str, x: float, y: float):
     t = inkex.elements.TextElement()
     t.text = s
     t.set("x", x)
     t.set("y", y)
-    t.set("font-size", fontsize)
-    t.set("transform", f"rotate(180 {x} {y})")
-    # t.set("style", "#00ff00")
-    t.set(
-        "style",
-        "font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583",
-    )
+    t.set("style", font_style)
     labeltext.append(t)
 
 
-def getTextPath(s, x, y):
-    svg = inkex.SvgDocumentElement()
-    # Create a text element
-    t = inkex.elements.TextElement()
-    t.text = s
+_text_id_counter = 0
+
+
+def addText(s: str, x: float, y: float, text_id=None):
+    global _text_id_counter
+    if text_id is None:
+        text_id = f"text_{_text_id_counter}"
+        _text_id_counter += 1
+    log(f"Text id: {text_id}")
+    t = inkex.elements.TextElement(id=text_id)
+    lines = s.split(" ")
+    for line, i in zip(lines, range(len(lines))):
+        l = inkex.elements._text.Tspan()
+        l.text = line
+        l.set("dy", f"{i*1.1}em")
+        l.set("x", x)
+        l.set("style", font_style)
+        t.append(l)
+
     t.set("x", x)
     t.set("y", y)
-    t.set("font-size", fontsize)
+    t.set("style", font_style)
+    labeltext.append(t)
 
-    svg.append(t)
+
+def generateTextPaths():
+    """
+    Generate all of the text paths, and return them so they can be added to the groups
+    """
+    svg = inkex.SvgDocumentElement()
+    # Create a text element
+    for e in labeltext:
+        svg.append(e)
 
     paths_svg_str = io.BytesIO(
         inkex.command.inkscape(
@@ -167,10 +178,23 @@ def getTextPath(s, x, y):
     )
     paths_svg = inkex.extensions.load_svg(paths_svg_str)
 
+    # Extract all the top level groups from the document
+    groups = paths_svg.xpath("/svg:svg/svg:g", namespaces=inkex.NSS)
     # Extract all the paths elements from the document
-    paths = paths_svg.xpath("//svg:path", namespaces=inkex.NSS)
+    paths = paths_svg.xpath("/svg:svg/svg:path", namespaces=inkex.NSS)
+    all = groups + paths
 
-    return paths[0]
+    # Get the height of the highest path
+    all_paths = paths_svg.xpath("//svg:path", namespaces=inkex.NSS)
+    height = 1
+    for test_path in all_paths:
+        height = max(height, test_path.bounding_box().height)
+
+    # Nudge all the paths down by the height, and add them to the group
+    for e in all:
+        e.set("transform", f"translate({kerf}, {height+kerf})")
+
+    return all
 
 
 def dimpleStr(tabVector, vectorX, vectorY, dirX, dirY, dirxN, diryN, ddir, isTab):
@@ -348,6 +372,7 @@ def side(
                         + dirX * dividerSpacing * dividerNumber
                         - dividerEdgeOffsetY
                         + notDirY * halfkerf
+                        + notDirX * length / 2
                     )
                     h = "M " + str(Dx) + "," + str(Dy) + " "
                     Dx = Dx + dirX * (first + length / 2)
@@ -483,23 +508,26 @@ def side(
         #   Dy-=notDirY*(secondVec+kerf)
         #   h+='L '+str(Dx)+','+str(Dy)+' '
         #   group.add(getLine(h))
-    if isDivider and cutouts and dirX == -1 and dirY == 0:
-        log(f"Cutouts: {cutouts}")
-        (vectorX, vectorY) = (
-            rootX + startOffsetX * thickness,
-            rootY + startOffsetY * thickness,
-        )
-        s = f"M {vectorX},{vectorY} "
-        for cutout in cutouts:
-            cutx = cutout[1]
-            cuty = cutout[2] / 2
-            x = vectorX - cutout[0] + cutx / 2
-            y = vectorY
-            s += f"L {x},{y} L {x},{y-cuty} C {x},{y-cuty*2} {x-cutx},{y-cuty*2} {x-cutx},{y-cuty} L {x-cutx},{y}"  # C {rootX-cut},{rootY+cut} {rootX+cut},{rootY+cut} {rootX+cut},{rootY+cut/2} L {rootX-cut},{rootY}"
-        s += f"L {rootX + endOffsetX * thickness + dirX * length},{rootY + endOffsetY * thickness + dirY * length}"
-        if labels is not None:
-            for labels, labelx in labels[: len(cutouts)]:
-                addText(labels, x - labelx, y)
+    (vectorX, vectorY) = (
+        rootX + startOffsetX * thickness,
+        rootY + startOffsetY * thickness,
+    )
+    if isDivider:
+        if cutouts:
+            s = f"M {vectorX},{vectorY} "
+            for cutout in cutouts:
+                cutx = cutout[1]
+                cuty = cutout[2] / 2
+                x = vectorX + cutout[0] - cutx / 2
+                y = vectorY
+                s += f"L {x},{y} L {x},{y+cuty} C {x},{y+cuty*2} {x+cutx},{y+cuty*2} {x+cutx},{y+cuty} L {x+cutx},{y}"
+            s += f"L {rootX + endOffsetX * thickness + dirX * length},{rootY + endOffsetY * thickness + dirY * length}"
+    if labels is not None:
+        gid = group.get("id")
+        i = 0
+        for labels, labelx in labels[:divx]:
+            addText(labels, vectorX + labelx, vectorY, f"label_{gid}_{i}")
+            i += 1
     group.add(getLine(s, color))
 
     return s
@@ -729,35 +757,27 @@ class BoxMaker(inkex.Effect):
         self.arg_parser.add_argument(
             "--div_cutout_width_percentage",
             type=float,
-            default=30,
+            default=0,
             help="Percentage size of the divider width to cutout for a finger hole",
         )
         self.arg_parser.add_argument(
             "--div_cutout_height_percentage",
             type=float,
-            default=80,
+            default=0,
             help="Percentage size of the divider height to cutout for a finger hole",
         )
         self.arg_parser.add_argument(
             "--labels",
-            default="""\
-Creature
-Bari
-Monster
-Scary Thing
-Fooi
-""",
             help="A new line separated list of labels to be added to the dividers",
         )
         self.arg_parser.add_argument(
-            "--label-font-size",
-            type=float,
-            default=12,
-            help="A new line separated list of labels to be added to the dividers",
+            "--label_font_style",
+            default="font-size:12;font-family:sans-serif;fill:#0000ff",
+            help="The style to use for the labels",
         )
 
     def effect(self):
-        global group, nomTab, equalTabs, tabSymmetry, dimpleHeight, dimpleLength, thickness, kerf, halfkerf, dogbone, divx, divy, hairline, linethickness, keydivwalls, keydivfloor, labeltext, fontsize
+        global group, nomTab, equalTabs, tabSymmetry, dimpleHeight, dimpleLength, thickness, kerf, halfkerf, dogbone, divx, divy, hairline, linethickness, keydivwalls, keydivfloor, labeltext, font_style
 
         # Get access to main SVG document element and get its dimensions.
         svg = self.document.getroot()
@@ -807,9 +827,7 @@ Fooi
         else:
             ## boxmaker.inx
             X = self.svg.unittouu(str(self.options.length + self.options.kerf) + unit)
-            Y = self.svg.unittouu(
-                str(self.options.width * 2 + self.options.kerf) + unit
-            )
+            Y = self.svg.unittouu(str(self.options.width + self.options.kerf) + unit)
 
         Z = self.svg.unittouu(str(self.options.height + self.options.kerf) + unit)
         thickness = self.svg.unittouu(str(self.options.thickness) + unit)
@@ -832,13 +850,13 @@ Fooi
         initOffsetY = 0
 
         if self.options.labels:
-            labels = self.options.labels.split("\n")
+            labels = self.options.labels.split("\\n")
             while len(labels) < ((divx + 1) * (divy + 1)):
                 labels.append("")
         else:
             labels = None
 
-        fontsize = self.options.label_font_size
+        font_style = self.options.label_font_style
         labeltext = []
 
         if inside:  # if inside dimension selected correct values to outside dimension
@@ -1234,15 +1252,15 @@ Fooi
                     btabs = dtabs = 0
 
                 y = 4 * spacing + 1 * Y + 2 * Z  # root y co-ord for piece
-                if labels is not None:
-                    div_labels = []
-                else:
-                    div_labels = None
                 for n in range(0, divx):  # generate X dividers
-                    group = newGroup(self)
+                    group = newGroup(self, f"dividers_{n}")
                     x = n * (spacing + X)  # root x co-ord for piece
 
                     cutouts = []
+                    if labels is not None:
+                        div_labels = []
+                    else:
+                        div_labels = None
                     div_face_width = (X - (thickness * (divy + 2))) / (divy + 1)
                     if div_cutout_width_percentage and div_cutout_height_percentage > 0:
                         if div_cutout_width_percentage > 90:
@@ -1256,7 +1274,6 @@ Fooi
                         div_cutout_height = (
                             (Z - thickness) * div_cutout_height_percentage / 100
                         )
-                        log("div_face_width: %f" % div_face_width)
                         if labels is not None:
                             offset = (div_face_width - div_cutout_width) / 2 - thickness
                         else:
@@ -1275,12 +1292,11 @@ Fooi
 
                     if labels is not None:
                         for i in range(0, divy + 1):
+                            label_text = labels.pop(0)
                             div_labels.append(
                                 (
-                                    labels.pop(0),
-                                    (i) * (div_face_width + thickness)
-                                    + div_face_width / 2
-                                    - thickness,
+                                    label_text,
+                                    i * (div_face_width + thickness) + thickness,
                                 )
                             )
                     side(
@@ -1288,7 +1304,7 @@ Fooi
                         (x, y),
                         (d, a),
                         (-b, a),
-                        keydivfloor * atabs * (-thickness if a else thickness),
+                        keydivfloor * ctabs * (-thickness if a else thickness),
                         dtabs,
                         dx,
                         (1, 0),
@@ -1296,7 +1312,8 @@ Fooi
                         1,
                         0,
                         0,
-                        "green",
+                        cutouts=cutouts,
+                        labels=div_labels,
                     )  # side a
                     side(
                         group,
@@ -1312,28 +1329,19 @@ Fooi
                         divy * xholes,
                         xspacing,
                     )  # side b
-                    # Log all of the arguments to side so we can see what's going on
-                    log(
-                        f"group: {group}, root: {(x + dx, y + dy)}, startOffset: {(-b, -c)}, endOffset: {(d, -c)}, tabVec: {keydivwalls * ctabs * (thickness if c else -thickness)}, prevTab: {btabs}, length: {dx}, direction: {(-1, 0)}, isTab: {c}, isDivider: {1}, numDividers: {divx * yholes}, dividerSpacing: {yspacing}, color: {'blue'}"
-                    )
                     side(
-                        group,  # group
-                        (x + dx, y + dy),  # root
-                        (-b, -c),  # startOffset
-                        (d, -c),  # endOffset
-                        keydivfloor
-                        * ctabs
-                        * (thickness if c else -thickness),  # tabVec
-                        btabs,  # prevTab
-                        dx,  # length
-                        (-1, 0),  # direction
-                        c,  # isTab
-                        1,  # isDivider
-                        0,  # numDividers
-                        0,  # dividerSpacing
-                        "blue",
-                        cutouts=cutouts,
-                        labels=div_labels,
+                        group,
+                        (x + dx, y + dy),
+                        (-b, -c),
+                        (d, -c),
+                        keydivfloor * atabs * (thickness if c else -thickness),
+                        btabs,
+                        dx,
+                        (-1, 0),
+                        c,
+                        1,
+                        0,
+                        0,
                     )  # side c
                     side(
                         group,
@@ -1411,10 +1419,25 @@ Fooi
                         0,
                     )  # side d
         if labeltext:
-            group = newGroup(self)
-            for e in labeltext:
-                log(f"eeeeee {e} {str(e.tostring())}")
-                group.add(e)
+            text_paths = generateTextPaths()
+            # Add the text paths to the corresponding divider group.
+            # It's done this way as the call to convert the text to a path shells out
+            # to Inkspace, so we only want to do that once.
+            for i in range(0, divx):
+                div_name = f"dividers_{i}"
+                group = self.svg.getElementById(div_name)
+                if group is None:
+                    continue
+                # Create a group to hold the labels
+                label_group = group.add(inkex.Group(id=f"{div_name}_labels"))
+                log(f"Found group: {group}, looking for paths: {div_name}*")
+                # find all the paths that start with div_name
+                prefix = f"label_{div_name}_"
+                for path in text_paths:
+                    log("path id: %s" % path.get("id"))
+                    path_id = path.get("id", "")
+                    if path_id.startswith(prefix):
+                        label_group.add(path)
 
 
 # Create effect instance and apply it.
