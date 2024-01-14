@@ -25,6 +25,9 @@
 				_gui-text="    Width">240</param>
 			<param name="depth" type="float" precision="3" min="0.0" max="10000.0"
 				_gui-text="    Height">50</param>
+			<param name="include_box_information" gui-text="Include box information"
+				gui-description="If true, then a text object will be created with information on the box dimensions."
+				type="bool">false</param>
 
 			<spacer />
 			<label>Tabs</label>
@@ -114,11 +117,20 @@
 				_gui-text="    Cutout Height %"
 				gui-description="If both cutout width and height greater than zero, a cutout to allow access for fingers will be made on the wide dividers">
 				0</param>
+			<param name="include_cutout_front" gui-text="Include cutouts in back"
+				gui-description="If true, then cutouts will also be included on the back panel."
+				type="bool">false</param>
 			<param name="labels" type="string" appearance="multiline" gui-text="    Labels"
 				gui-description="If set, each section of the divider will have a label. The cutouts, if set, will be moved to the side."></param>
+			<param name="line_break_on_space" gui-text="Line break on space"
+				gui-description="If true, then labels will be broken into a new line on spaces, if false, then labels will be one line. If you need a space with this checked, use a non-breaking space (eg: Option+Space on MacOS)."
+				type="bool">false</param>
 			<param name="label_font_style" type="string" gui-text="    Label Font Style"
 				gui-description="If labels are set, the font-style to use.">
 				font-size:12;font-family:sans-serif;fill:#0000ff</param>
+			<param name="include_label_front" gui-text="Include labels back"
+				gui-description="If true, then the labels will start on the outermost panel, if not set, then labels will only be on the dividers."
+				type="bool">true</param>
 		</vbox>
 	</hbox>
 	<effect>

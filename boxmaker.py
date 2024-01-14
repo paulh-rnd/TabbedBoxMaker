@@ -65,6 +65,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 __version__ = "1.2"  ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
+from email.headerregistry import Group
 import gettext
 import io
 import os
@@ -79,6 +80,11 @@ linethickness = 1  # default unless overridden by settings
 
 
 os.environ["SCHROFF_LOG"] = "/tmp/schroff.log"
+
+GROUP_ID = 7
+COLOR = 8
+DIV_CUTOUTS = 9
+DIV_LABELS = 10
 
 
 def log(text):
@@ -136,26 +142,37 @@ def addTextOneLine(s: str, x: float, y: float):
 _text_id_counter = 0
 
 
-def addText(s: str, x: float, y: float, text_id=None):
+def generateTextLines(
+    s: str, x: float, y: float, text_id=None, newline_chr=" ", style=None
+):
     global _text_id_counter
     if text_id is None:
         text_id = f"text_{_text_id_counter}"
         _text_id_counter += 1
-    log(f"Text id: {text_id}")
+    if style is None:
+        style = font_style
     t = inkex.elements.TextElement(id=text_id)
-    lines = s.split(" ")
+    lines = s.split(newline_chr)
     for line, i in zip(lines, range(len(lines))):
         l = inkex.elements._text.Tspan()
         l.text = line
-        l.set("dy", f"{i*1.1}em")
+        l.set("dy", f"{1.0}em")  # Push down by 1 line in height
         l.set("x", x)
-        l.set("style", font_style)
+        l.set("style", style)
         t.append(l)
 
     t.set("x", x)
     t.set("y", y)
-    t.set("style", font_style)
-    labeltext.append(t)
+    t.set("style", style)
+    return t
+
+
+def addText(s: str, x: float, y: float, text_id=None, style=None):
+    if line_break_on_space:
+        newline_chr = " "
+    else:
+        newline_chr = "\n"
+    labeltext.append(generateTextLines(s, x, y, text_id, newline_chr, style))
 
 
 def generateTextPaths():
@@ -184,15 +201,16 @@ def generateTextPaths():
     paths = paths_svg.xpath("/svg:svg/svg:path", namespaces=inkex.NSS)
     all = groups + paths
 
-    # Get the height of the highest path
-    all_paths = paths_svg.xpath("//svg:path", namespaces=inkex.NSS)
-    height = 1
-    for test_path in all_paths:
-        height = max(height, test_path.bounding_box().height)
+    # By using `dy` in the text line, we don't need this
+    # # Get the height of the highest path
+    # all_paths = paths_svg.xpath("//svg:path", namespaces=inkex.NSS)
+    # height = 1
+    # for test_path in all_paths:
+    #     height = max(height, test_path.bounding_box().height)
 
-    # Nudge all the paths down by the height, and add them to the group
-    for e in all:
-        e.set("transform", f"translate({kerf}, {height+kerf})")
+    # # Nudge all the paths down by the height, and add them to the group
+    # for e in all:
+    #     e.set("transform", f"translate({kerf}, {height+kerf})")
 
     return all
 
@@ -512,21 +530,21 @@ def side(
         rootX + startOffsetX * thickness,
         rootY + startOffsetY * thickness,
     )
-    if isDivider:
-        if cutouts:
-            s = f"M {vectorX},{vectorY} "
-            for cutout in cutouts:
-                cutx = cutout[1]
-                cuty = cutout[2] / 2
-                x = vectorX + cutout[0] - cutx / 2
-                y = vectorY
-                s += f"L {x},{y} L {x},{y+cuty} C {x},{y+cuty*2} {x+cutx},{y+cuty*2} {x+cutx},{y+cuty} L {x+cutx},{y}"
-            s += f"L {rootX + endOffsetX * thickness + dirX * length},{rootY + endOffsetY * thickness + dirY * length}"
+    if cutouts:
+        s = f"M {vectorX},{vectorY} "
+        for cutout in cutouts:
+            cutx = cutout[1]
+            cuty = cutout[2] / 2
+            x = vectorX + cutout[0] - cutx / 2
+            y = vectorY
+            s += f"L {x},{y} L {x},{y+cuty} C {x},{y+cuty*2} {x+cutx},{y+cuty*2} {x+cutx},{y+cuty} L {x+cutx},{y}"
+        s += f"L {rootX + endOffsetX * thickness + dirX * length},{rootY + endOffsetY * thickness + dirY * length}"
     if labels is not None:
+        log(f"Labels: {labels}")
         gid = group.get("id")
         i = 0
-        for labels, labelx in labels[:divx]:
-            addText(labels, vectorX + labelx, vectorY, f"label_{gid}_{i}")
+        for label, labelx in labels[: (divy + 1)]:
+            addText(label, vectorX + labelx, vectorY, f"label_{gid}_{i}")
             i += 1
     group.add(getLine(s, color))
 
@@ -767,6 +785,11 @@ class BoxMaker(inkex.Effect):
             help="Percentage size of the divider height to cutout for a finger hole",
         )
         self.arg_parser.add_argument(
+            "--include_cutout_front",
+            default="true",
+            help="Include cutoutns on the front as well as the dividers",
+        )
+        self.arg_parser.add_argument(
             "--labels",
             help="A new line separated list of labels to be added to the dividers",
         )
@@ -775,9 +798,24 @@ class BoxMaker(inkex.Effect):
             default="font-size:12;font-family:sans-serif;fill:#0000ff",
             help="The style to use for the labels",
         )
+        self.arg_parser.add_argument(
+            "--include_label_front",
+            default="true",
+            help="Include labels on the front panel as well as dividers",
+        )
+        self.arg_parser.add_argument(
+            "--line_break_on_space",
+            default="false",
+            help="Split labels on a space into a new line",
+        )
+        self.arg_parser.add_argument(
+            "--include_box_information",
+            default="true",
+            help="Include information about the box as a text block",
+        )
 
     def effect(self):
-        global group, nomTab, equalTabs, tabSymmetry, dimpleHeight, dimpleLength, thickness, kerf, halfkerf, dogbone, divx, divy, hairline, linethickness, keydivwalls, keydivfloor, labeltext, font_style
+        global group, nomTab, equalTabs, tabSymmetry, dimpleHeight, dimpleLength, thickness, kerf, halfkerf, dogbone, divx, divy, hairline, linethickness, keydivwalls, keydivfloor, labeltext, font_style, line_break_on_space
 
         # Get access to main SVG document element and get its dimensions.
         svg = self.document.getroot()
@@ -844,6 +882,7 @@ class BoxMaker(inkex.Effect):
         divy = self.options.div_w
         div_cutout_width_percentage = self.options.div_cutout_width_percentage
         div_cutout_height_percentage = self.options.div_cutout_height_percentage
+        include_cutout_front = self.options.include_cutout_front == "true"
         keydivwalls = 0 if self.options.keydiv == 3 or self.options.keydiv == 1 else 1
         keydivfloor = 0 if self.options.keydiv == 3 or self.options.keydiv == 2 else 1
         initOffsetX = 0
@@ -851,12 +890,14 @@ class BoxMaker(inkex.Effect):
 
         if self.options.labels:
             labels = self.options.labels.split("\\n")
-            while len(labels) < ((divx + 1) * (divy + 1)):
+            while len(labels) < ((divx + 1) * (divy + 2)):
                 labels.append("")
         else:
             labels = None
 
         font_style = self.options.label_font_style
+        include_label_front = self.options.include_label_front == "true"
+        line_break_on_space = self.options.line_break_on_space == "true"
         labeltext = []
 
         if inside:  # if inside dimension selected correct values to outside dimension
@@ -1022,6 +1063,31 @@ class BoxMaker(inkex.Effect):
                 (s, x, y, z) = aa[ix]
                 aa[ix] = (s - 1, x - dx, y - dy, z - dz)
 
+        div_face_width = (X - (thickness * (divy + 2))) / (divy + 1)
+
+        cutouts = []
+        if div_cutout_width_percentage and div_cutout_height_percentage > 0:
+            if div_cutout_width_percentage > 90:
+                div_cutout_width_percentage = 90
+            if div_cutout_height_percentage > 90:
+                div_cutout_height_percentage = 90
+            # Add a cutout for the finger hole
+            div_cutout_width = div_face_width * div_cutout_width_percentage / 100
+            div_cutout_height = (Z - thickness) * div_cutout_height_percentage / 100
+            if labels is not None:
+                offset = (div_face_width - div_cutout_width) / 2 - thickness
+            else:
+                offset = 0
+
+            for i in range(1, divy + 2):
+                cutouts.append(
+                    (
+                        i * (div_face_width + thickness) - div_face_width / 2 + offset,
+                        div_cutout_width,
+                        div_cutout_height,
+                    )
+                )
+
         # note first two pieces in each set are the X-divider template and Y-divider template respectively
         pieces = []
         if layout == 1:  # Diagramatic Layout
@@ -1044,7 +1110,34 @@ class BoxMaker(inkex.Effect):
             if hasTp:
                 pieces.append([cc[3], rr[1], X, Y, tpTabInfo, tpTabbed, tpFace])
             if hasFt:
-                pieces.append([cc[1], rr[0], X, Z, ftTabInfo, ftTabbed, ftFace])
+                piece = [
+                    cc[1],
+                    rr[0],
+                    X,
+                    Z,
+                    ftTabInfo,
+                    ftTabbed,
+                    ftFace,
+                    "panel_front",
+                    None,
+                ]
+                if include_cutout_front:
+                    piece.append(cutouts)
+                else:
+                    piece.append(None)
+                if include_label_front and labels is not None:
+                    div_labels = []
+                    for i in range(0, divy + 1):
+                        label_text = labels.pop(0)
+                        div_labels.append(
+                            (
+                                label_text,
+                                i * (div_face_width + thickness) + thickness,
+                            )
+                        )
+                    piece.append(div_labels)
+
+                pieces.append(piece)
         elif layout == 2:  # 3 Piece Layout
             rr = deepcopy([row0, row1y])
             cc = deepcopy([col0, col1z])
@@ -1083,6 +1176,19 @@ class BoxMaker(inkex.Effect):
         for idx, piece in enumerate(pieces):  # generate and draw each piece of the box
             (xs, xx, xy, xz) = piece[0]
             (ys, yx, yy, yz) = piece[1]
+            while len(piece) < 11:
+                piece.append(None)
+
+            group_id = piece[GROUP_ID]
+
+            color = piece[COLOR]
+            if color is None:
+                color = "#000000"
+
+            div_cutouts = piece[DIV_CUTOUTS]
+
+            div_labels = piece[DIV_LABELS]
+
             x = (
                 xs * spacing + xx * X + xy * Y + xz * Z + initOffsetX
             )  # root x co-ord for piece
@@ -1109,7 +1215,7 @@ class BoxMaker(inkex.Effect):
             floor = 1 if piece[6] == 1 else 0
             railholes = 1 if piece[6] == 3 else 0
 
-            group = newGroup(self)
+            group = newGroup(self, group_id)
 
             if schroff and railholes:
                 log(
@@ -1158,6 +1264,9 @@ class BoxMaker(inkex.Effect):
                 0,
                 (keydivfloor | wall) * (keydivwalls | floor) * divx * yholes * atabs,
                 yspacing,
+                cutouts=div_cutouts,
+                color=color,
+                labels=div_labels,
             )  # side a
             side(
                 group,
@@ -1172,6 +1281,7 @@ class BoxMaker(inkex.Effect):
                 0,
                 (keydivfloor | wall) * (keydivwalls | floor) * divy * xholes * btabs,
                 xspacing,
+                color=color,
             )  # side b
             if atabs:
                 side(
@@ -1187,6 +1297,7 @@ class BoxMaker(inkex.Effect):
                     0,
                     0,
                     0,
+                    color=color,
                 )  # side c
             else:
                 side(
@@ -1206,6 +1317,7 @@ class BoxMaker(inkex.Effect):
                     * yholes
                     * ctabs,
                     yspacing,
+                    color=color,
                 )  # side c
             if btabs:
                 side(
@@ -1221,6 +1333,7 @@ class BoxMaker(inkex.Effect):
                     0,
                     0,
                     0,
+                    color=color,
                 )  # side d
             else:
                 side(
@@ -1240,6 +1353,7 @@ class BoxMaker(inkex.Effect):
                     * xholes
                     * dtabs,
                     xspacing,
+                    color=color,
                 )  # side d
 
             if idx == 0:
@@ -1256,41 +1370,8 @@ class BoxMaker(inkex.Effect):
                     group = newGroup(self, f"dividers_{n}")
                     x = n * (spacing + X)  # root x co-ord for piece
 
-                    cutouts = []
                     if labels is not None:
                         div_labels = []
-                    else:
-                        div_labels = None
-                    div_face_width = (X - (thickness * (divy + 2))) / (divy + 1)
-                    if div_cutout_width_percentage and div_cutout_height_percentage > 0:
-                        if div_cutout_width_percentage > 90:
-                            div_cutout_width_percentage = 90
-                        if div_cutout_height_percentage > 90:
-                            div_cutout_height_percentage = 90
-                        # Add a cutout for the finger hole
-                        div_cutout_width = (
-                            div_face_width * div_cutout_width_percentage / 100
-                        )
-                        div_cutout_height = (
-                            (Z - thickness) * div_cutout_height_percentage / 100
-                        )
-                        if labels is not None:
-                            offset = (div_face_width - div_cutout_width) / 2 - thickness
-                        else:
-                            offset = 0
-
-                        for i in range(1, divy + 2):
-                            cutouts.append(
-                                (
-                                    i * (div_face_width + thickness)
-                                    - div_face_width / 2
-                                    + offset,
-                                    div_cutout_width,
-                                    div_cutout_height,
-                                )
-                            )
-
-                    if labels is not None:
                         for i in range(0, divy + 1):
                             label_text = labels.pop(0)
                             div_labels.append(
@@ -1299,6 +1380,9 @@ class BoxMaker(inkex.Effect):
                                     i * (div_face_width + thickness) + thickness,
                                 )
                             )
+                        log(f"div_labels: {div_labels}")
+                    else:
+                        div_labels = None
                     side(
                         group,
                         (x, y),
@@ -1423,23 +1507,54 @@ class BoxMaker(inkex.Effect):
             # Add the text paths to the corresponding divider group.
             # It's done this way as the call to convert the text to a path shells out
             # to Inkspace, so we only want to do that once.
+            div_ids = ["panel_front"]
             for i in range(0, divx):
-                div_name = f"dividers_{i}"
-                group = self.svg.getElementById(div_name)
+                div_ids.append(f"dividers_{i}")
+
+            for div_id in div_ids:
+                group = self.svg.getElementById(div_id)
                 if group is None:
                     continue
                 # Create a group to hold the labels
-                label_group = group.add(inkex.Group(id=f"{div_name}_labels"))
-                log(f"Found group: {group}, looking for paths: {div_name}*")
+                label_group = group.add(inkex.Group(id=f"{div_id}_labels"))
+                log(f"Found group: {group}, looking for paths: {div_id}*")
                 # find all the paths that start with div_name
-                prefix = f"label_{div_name}_"
+                prefix = f"label_{div_id}_"
                 for path in text_paths:
                     log("path id: %s" % path.get("id"))
                     path_id = path.get("id", "")
                     if path_id.startswith(prefix):
                         label_group.add(path)
 
+        if self.options.include_box_information == "true":
+            outer_str = f"{X:.2f}w {Y:.2f}l {Z:.2f}h"
+            inner_w = X - (thickness if hasLt else 0) - (thickness if hasRt else 0)
+            inner_l = Y - (thickness if hasBk else 0) - (thickness if hasFt else 0)
+            inner_h = Z - (thickness if hasBm else 0)
+            section_w = (inner_w - thickness * divy) / (divy + 1)
+            section_l = (inner_l - thickness * divx) / (divx + 1)
+            box_info_text = f"""\
+Outer Box: {outer_str}
+Inner Box: {inner_w:.2f}w {inner_l:.2f}l {inner_h:.2f}h
+Inner Section: {section_w:.2f}w {section_l:.2f}l {inner_h:.2f}h
+Total Section Count: {(divx + 1) *(divy + 1)}
+"""
+            t = generateTextLines(
+                box_info_text,
+                X + Z * 2 + thickness * 3 + spacing * 3,
+                0,
+                "box_info",
+                "\n",
+                "font-size:9;font-family:sans-serif;fill:#ff0000",
+            )
+            self.svg.get_current_layer().add(t)
 
-# Create effect instance and apply it.
-effect = BoxMaker()
-effect.run()
+
+def main():
+    # Create effect instance and apply it.
+    effect = BoxMaker()
+    effect.run()
+
+
+if __name__ == "__main__":
+    main()
