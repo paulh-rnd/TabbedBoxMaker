@@ -786,7 +786,8 @@ class BoxMaker(inkex.Effect):
         )
         self.arg_parser.add_argument(
             "--include_cutout_front",
-            default="true",
+            type=inkex.Boolean,
+            default=False,
             help="Include cutoutns on the front as well as the dividers",
         )
         self.arg_parser.add_argument(
@@ -800,17 +801,20 @@ class BoxMaker(inkex.Effect):
         )
         self.arg_parser.add_argument(
             "--include_label_front",
-            default="true",
+            type=inkex.Boolean,
+            default=False,
             help="Include labels on the front panel as well as dividers",
         )
         self.arg_parser.add_argument(
             "--line_break_on_space",
-            default="false",
+            type=inkex.Boolean,
+            default=False,
             help="Split labels on a space into a new line",
         )
         self.arg_parser.add_argument(
             "--include_box_information",
-            default="true",
+            type=inkex.Boolean,
+            default=False,
             help="Include information about the box as a text block",
         )
 
@@ -882,7 +886,7 @@ class BoxMaker(inkex.Effect):
         divy = self.options.div_w
         div_cutout_width_percentage = self.options.div_cutout_width_percentage
         div_cutout_height_percentage = self.options.div_cutout_height_percentage
-        include_cutout_front = self.options.include_cutout_front == "true"
+        include_cutout_front = self.options.include_cutout_front
         keydivwalls = 0 if self.options.keydiv == 3 or self.options.keydiv == 1 else 1
         keydivfloor = 0 if self.options.keydiv == 3 or self.options.keydiv == 2 else 1
         initOffsetX = 0
@@ -896,8 +900,8 @@ class BoxMaker(inkex.Effect):
             labels = None
 
         font_style = self.options.label_font_style
-        include_label_front = self.options.include_label_front == "true"
-        line_break_on_space = self.options.line_break_on_space == "true"
+        include_label_front = self.options.include_label_front
+        line_break_on_space = self.options.line_break_on_space
         labeltext = []
 
         if inside:  # if inside dimension selected correct values to outside dimension
@@ -1526,7 +1530,7 @@ class BoxMaker(inkex.Effect):
                     if path_id.startswith(prefix):
                         label_group.add(path)
 
-        if self.options.include_box_information == "true":
+        if self.options.include_box_information:
             outer_str = f"{X:.2f}w {Y:.2f}l {Z:.2f}h"
             inner_w = X - (thickness if hasLt else 0) - (thickness if hasRt else 0)
             inner_l = Y - (thickness if hasBk else 0) - (thickness if hasFt else 0)
