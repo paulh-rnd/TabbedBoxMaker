@@ -125,7 +125,7 @@
 			<param name="line_break_on_space" gui-text="Line break on space"
 				gui-description="If true, then labels will be broken into a new line on spaces, if false, then labels will be one line. If you need a space with this checked, use a non-breaking space (eg: Option+Space on MacOS)."
 				type="bool">false</param>
-			<param name="label_font_style" type="string" gui-text="    Label Font Style"
+			<param name="label_font_style" type="string" gui-text="    Label font style"
 				gui-description="If labels are set, the font-style to use.">
 				font-size:12;font-family:sans-serif;fill:#0000ff</param>
 			<param name="include_label_front" gui-text="Include labels back"

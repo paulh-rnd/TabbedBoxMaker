@@ -63,9 +63,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-__version__ = "1.2"  ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
+__version__ = "2.0"  ### please report bugs, suggestions etc at https://github.com/paulh-rnd/TabbedBoxMaker ###
 
-from email.headerregistry import Group
 import gettext
 import io
 import os
@@ -78,8 +77,6 @@ _ = gettext.gettext
 
 linethickness = 1  # default unless overridden by settings
 
-
-os.environ["SCHROFF_LOG"] = "/tmp/schroff.log"
 
 GROUP_ID = 7
 COLOR = 8
