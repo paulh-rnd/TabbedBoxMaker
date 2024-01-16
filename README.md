@@ -1,6 +1,6 @@
 # TabbedBoxMaker: A free Inkscape extension for generating tab-jointed box patterns
 
-_version 1.2 - 4 Dec 2023_
+_version 2.0 - 16 Jan 2024_
 
 Original box maker by Elliot White (formerly of twot.eu, domain name now squatted)
 
@@ -45,6 +45,8 @@ Parameters in order of appearance:
 * Box Dimensions: Inside/Outside - whether the box dimensions are internal or external measurements
 
 * Length / Width / Height - the box dimensions
+
+* Include box information - if set, a text box will be added to the drawing with statistics about the box (including inside and outside dimensions, divider sizes etc)
 
 * Tab Width: Fixed/Proportional - for fixed the tab width is the value given in the Tab
                                  Width, for proportional the side of a piece is divided 
@@ -98,6 +100,13 @@ Parameters in order of appearance:
 				
 * Space Between Parts - how far apart the pieces are in the drawing produced
 
+* Divider Cutout - if a finger cutout should be added to each divider, optionally included one of the ends. The cutout % must be set for both width and height for them to be generated. The % is a percentage of the divider width/height.
+  
+* Labels - if set, a list of strings to put on each divider. Each new line is the next divider. If there are more dividers than labels, the remaining dividers will be blank. If there are more labels than dividers, the remaining labels will be ignored. All labels text is converted to a path automatically.
+  * Line break on space - if set, then the label on a divider will be split into multiple lines on each space character. If you want to force a line to not split, use a non-breaking space (Alt+0160 on Windows, Option+Space on Mac).
+  * Label font style - The font style to use for the labels, this defaults to `font-size:12;font-family:sans-serif;fill:#0000ff` and can be updated with what ever works for your use case. The color is set to something different to allow the software using this to treat it differently to the cut lines.
+  * Include labels back - if set, then labels will also be included on the back (or front) of the box.
+
 * Live Preview - you may need to turn this off when changing tab style, box type, or layout
 
 ## Use - Schroff enclosures
@@ -139,20 +148,21 @@ Default installation directories are given below:
 * Machine: Depends on installation method
 
 ## Version History
-version | Date | Notes
---------|------|--------
-0.5  | ( 9 Oct 2011) | beta
-0.7  | (24 Oct 2011) | first release
-0.8  | (26 Oct 2011) | basic input checking implemented
-0.86 | (19 Dec 2014) | updates to allow different box types and internal dividers
-0.86a | (23 June 2015) | Updated for compatibility with Inkscape 0.91
-0.87 | (28 July 2015) | Schroff enclosure add-on
-0.93 | (21 Sept 2015) | Updated versioning to match original author's updated v0.91 plus adding my 0.02 
-0.93a | (21 Sept 2015) | Added hairline line thickness option for Epilog lasers
-0.94 | (4 Jan 2017) | Divider keying options
-0.95 | (20 Apr 2017) | Added optional dimples on tabs
-0.96 | (24 Apr 2017) | Orthogonalized box type, layout, tab style; added rotate-symmetric tabs
-0.99 | (4 June 2020) | Upgraded to support Inkscape v1.0, minor fixes and a tidy up of the parameters dialog layout
-1.0 |  (17 June 2020) | v1.0 final released: fixes and dogbone added - Mills now supported!
-1.1 |  (9 Aug 2021) | v1.1 with fixes for newer Inkscape versions - sorry for the delays
-1.2 |  (4 Dec 2023) | PR merged from [@mausmaux](https://github.com/mausmaux) with thanks
+| version | Date           | Notes                                                                                        |
+| ------- | -------------- | -------------------------------------------------------------------------------------------- |
+| 0.5     | ( 9 Oct 2011)  | beta                                                                                         |
+| 0.7     | (24 Oct 2011)  | first release                                                                                |
+| 0.8     | (26 Oct 2011)  | basic input checking implemented                                                             |
+| 0.86    | (19 Dec 2014)  | updates to allow different box types and internal dividers                                   |
+| 0.86a   | (23 June 2015) | Updated for compatibility with Inkscape 0.91                                                 |
+| 0.87    | (28 July 2015) | Schroff enclosure add-on                                                                     |
+| 0.93    | (21 Sept 2015) | Updated versioning to match original author's updated v0.91 plus adding my 0.02              |
+| 0.93a   | (21 Sept 2015) | Added hairline line thickness option for Epilog lasers                                       |
+| 0.94    | (4 Jan 2017)   | Divider keying options                                                                       |
+| 0.95    | (20 Apr 2017)  | Added optional dimples on tabs                                                               |
+| 0.96    | (24 Apr 2017)  | Orthogonalized box type, layout, tab style; added rotate-symmetric tabs                      |
+| 0.99    | (4 June 2020)  | Upgraded to support Inkscape v1.0, minor fixes and a tidy up of the parameters dialog layout |
+| 1.0     | (17 June 2020) | v1.0 final released: fixes and dogbone added - Mills now supported!                          |
+| 1.1     | (9 Aug 2021)   | v1.1 with fixes for newer Inkscape versions - sorry for the delays                           |
+| 1.2     | (4 Dec 2023)   | PR merged from [@mausmaux](https://github.com/mausmaux) with thanks                          |
+| 2.0     | (16 Jan 2024)  | Support of cutouts in dividers, and labels on dividers                                       |
