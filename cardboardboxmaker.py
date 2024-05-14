@@ -111,7 +111,12 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
             else:
                 # Side down-folds - since they are 180 degree, will have double knockouts
                 h+=f"l {t2},{-1*(hh+k2)} "
-                h+=f"l {wd+k2-(2*t2)},0 "
+                wd3 = (wd+k2-(2*t2))/3
+                h+=f"l {wd3},0 "
+                h+=f"l 0,{-t2} "
+                h+=f"l {wd3},0 "
+                h+=f"l 0,{t2} "
+                h+=f"l {wd3},0 "
                 h+=f"l {t2},{hh+(k2)} "
         else:
             # Standard fold - half depth/width on each side
@@ -155,6 +160,8 @@ class BoxMaker(inkex.Effect):
         dest='boxtop',default=25,help='Box Top')
       self.arg_parser.add_argument('--boxbottom',action='store',type=int,
         dest='boxbottom',default=25,help='Box Bottom')
+      self.arg_parser.add_argument('--sidetab',action='store',type=str,
+        dest='sidetab',help='Side Tab')
 
   def effect(self):
     global group,nomTab,equalTabs,tabSymmetry,dimpleHeight,dimpleLength,thickness,kerf,halfkerf,dogbone,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
@@ -174,7 +181,7 @@ class BoxMaker(inkex.Effect):
         linethickness=self.svg.unittouu('0.002in')
     else:
         linethickness=1
-    h=f"M 10,10 "
+    h=f"M 0,0 "
     hh=self.svg.unittouu(str(self.options.height)+unit)
     ww=self.svg.unittouu(str(self.options.width)+unit)
     dd=self.svg.unittouu(str(self.options.depth)+unit)
@@ -192,13 +199,17 @@ class BoxMaker(inkex.Effect):
 
     ## RIGHT EDGE 
 
-    # Straight - no tab: h+=f"l 0,{hh+k2} "
 
-    h+=f"l 0,{t2} l {t2-(k2)},0 l 0,{-1*t2} " # Leading Vertical Fold Notch
-    h+=f"l {t5+k2},{t2} "
-    h+=f"l 0,{hh+k2-(2*t2)} "
-    h+=f"l {-(t5+k2)},{t2} "
-    h+=f"l 0,{-t2} l {-(t2-(k2))},0 l 0,{t2} " # Leading Vertical Fold Notch
+    #inkex.utils.debug(self.options.sidetab)
+    if self.options.sidetab == "true":
+        h+=f"l 0,{t2} l {t2-(k2)},0 l 0,{-1*t2} " # Leading Vertical Fold Notch
+        h+=f"l {t5+k2},{t2} "
+        h+=f"l 0,{hh+k2-(2*t2)} "
+        h+=f"l {-(t5+k2)},{t2} "
+        h+=f"l 0,{-t2} l {-(t2-(k2))},0 l 0,{t2} " # Leading Vertical Fold Notch
+    else:
+        h+=f"l 0,{hh+k2} "
+
                 # Add tab along right edge:
 
     ## BOTTOM SIDE
@@ -210,6 +221,30 @@ class BoxMaker(inkex.Effect):
 
     h+=f"Z"
     group.add(getLine(h))
+
+
+    ## If we had top foldover tabs, add the slots fot them
+    t= t2/2
+    if (boxtop==2):
+        dd3 = ((dd-(2*t2))/3)
+        ww3 = ((ww-(2*t2))/3)
+        wd3 = dd3
+        o=ww + t2 + wd3 +  k2 + (t2/2)
+        for i in range (1,4):
+            h=f"M {o},{hh+(t/4)+k2} "
+            h+=f"l {wd3+t2-k2},0 "
+            h+=f"l 0,{(t*1.5)-k2} "
+            h+=f"l {-wd3+k2-t2},0 "
+            h+=f"l 0,{(-t*1.5)+k2} "
+            h+="Z"
+            group.add(getLine(h))
+            if (i==1):
+                o += dd3 + dd3 + ww3
+                wd3 = ww3
+            else:
+                o += ww3 + ww3 + dd3
+                wd3 = dd3
+            o += t5 + t
     return
     
 

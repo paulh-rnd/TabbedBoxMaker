@@ -52,6 +52,8 @@
 				<option value="4">Locking Fold</option>
 			</param>
 
+			<param name="sidetab" type="bool"  _gui-text="    Side Tab"></param>
+
 		</vbox>
 	</hbox> 
 	<effect>
