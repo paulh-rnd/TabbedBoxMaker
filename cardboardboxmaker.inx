@@ -13,11 +13,6 @@
 				<option value="in">in</option>
 			</param>
 
-			<param name="inside" type="optiongroup" _gui-text="    Box Dimensions" appearance="combo">
-				<_option value="1">Inside</_option>
-				<_option value="0">Outside</_option>
-			</param>
-
 			<param name="height" type="float" precision="3" min="0.0" max="10000.0" _gui-text="    Height">180</param>
 			<param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Width">240</param>
 			<param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Depth">50</param>
@@ -25,28 +20,6 @@
 			<spacer/>
 			<label>Tabs</label>
 			<separator/>
-			<param name="equal" type="optiongroup" _gui-text="    Width">
-				<_option value="0">Fixed</_option>
-				<_option value="1">Proportional</_option>
-			</param>
-
-			<param name="tab" type="float" precision="2" min="0.0" max="10000.0" _gui-text="    Min/Preferred Width">6.0</param> 
-
-			<param name="tabtype" type="optiongroup" _gui-text="    Type" appearance="combo">
-				<_option value="0">Regular (Laser)</_option>
-				<_option value="1">Dogbone (Mill)</_option>
-			</param>
-
-			<param name="tabsymmetry" type="optiongroup" _gui-text="    Symmetry" appearance="combo">
-				<_option value="0">XY Symmetric</_option>
-				<_option value="1">Rotate Symmetric</_option>
-				<!--_option value="2">Antisymmetric</_option-->
-			</param>
-
-			<param name="dimpleheight" type="float" precision="2" min="0.0" max="10000.0"
-					_gui-text="    Dimple Height">0.0</param>
-			<param name="dimplelength" type="float" precision="2" min="0.0" max="10000.0"
-					_gui-text="    Dimple Length">0.0</param>
 		</vbox>
 		<spacer/>
 		<separator/>
@@ -65,35 +38,20 @@
 			<spacer/>
 			<label>Layout</label>
 			<separator/>
-			<param name="style" _gui-text="    Layout" type="optiongroup" appearance="combo">
-				<option value="1">Diagramatic</option>
-				<option value="2">3 piece</option>
-				<option value="3">Inline(compact)</option>
-			</param>
 
 			<param name="boxtop" _gui-text="    Box Top" type="optiongroup" appearance="combo">
 				<option value="1">None</option>
-				<option value="2">Flat</option>
+				<option value="2">Flat Top w/ Sidefolds</option>
 				<option value="3">Standard Fold</option>
 				<option value="4">Locking Fold</option>
 			</param>
 			<param name="boxbottom" _gui-text="    Box Bottom" type="optiongroup" appearance="combo">
 				<option value="1">None</option>
-				<option value="2">Flat</option>
+				<option value="2">Flat Bottom w/ Sidefolds</option>
 				<option value="3">Standard Fold</option>
 				<option value="4">Locking Fold</option>
 			</param>
 
-			<param name="div_l" type="int" min="0" max="20" _gui-text="    Dividers (Length axis)">2</param>
-			<param name="div_w" type="int" min="0" max="20" _gui-text="    Dividers (Width axis)">3</param>
-			<param name="keydiv" _gui-text="    Key the dividers into" type="optiongroup" appearance="combo">
-				<option value="3">None</option>
-				<option value="2">Walls</option>
-				<option value="1">Floor / Ceiling</option>
-				<option value="0">All sides</option>
-			</param>
-
-			<param name="spacing" type="float" precision="2" min="0.0" max="10000.0" _gui-text="    Space Between Parts">1.0</param> 
 		</vbox>
 	</hbox> 
 	<effect>
