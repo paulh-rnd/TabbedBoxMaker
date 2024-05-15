@@ -53,6 +53,7 @@
 			</param>
 
 			<param name="sidetab" type="bool"  _gui-text="    Side Tab"></param>
+			<param name="foldlines" type="bool"  _gui-text="Add Fold Lines"></param>
 
 		</vbox>
 	</hbox> 

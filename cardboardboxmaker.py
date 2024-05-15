@@ -42,9 +42,9 @@ def newGroup(canvas):
   group = canvas.svg.get_current_layer().add(inkex.Group(id=panelId))
   return group
   
-def getLine(XYstring):
+def getLine(XYstring,stroke="#000000"):
   line = inkex.PathElement()
-  line.style = { 'stroke': '#000000', 'stroke-width'  : str(linethickness), 'fill': 'none' }
+  line.style = { 'stroke': stroke, 'stroke-width'  : str(linethickness), 'fill': 'none' }
   line.path = XYstring
   #inkex.etree.SubElement(parent, inkex.addNS('path','svg'), drw)
   return line
@@ -162,6 +162,8 @@ class BoxMaker(inkex.Effect):
         dest='boxbottom',default=25,help='Box Bottom')
       self.arg_parser.add_argument('--sidetab',action='store',type=str,
         dest='sidetab',help='Side Tab')
+      self.arg_parser.add_argument('--foldlines',action='store',type=str,
+        dest='foldlines',help='Add Cut Lines')
 
   def effect(self):
     global group,nomTab,equalTabs,tabSymmetry,dimpleHeight,dimpleLength,thickness,kerf,halfkerf,dogbone,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
@@ -199,8 +201,7 @@ class BoxMaker(inkex.Effect):
 
     ## RIGHT EDGE 
 
-
-    #inkex.utils.debug(self.options.sidetab)
+    # Add tab along right edge if wanted (else, straight edge)
     if self.options.sidetab == "true":
         h+=f"l 0,{t2} l {t2-(k2)},0 l 0,{-1*t2} " # Leading Vertical Fold Notch
         h+=f"l {t5+k2},{t2} "
@@ -210,7 +211,6 @@ class BoxMaker(inkex.Effect):
     else:
         h+=f"l 0,{hh+k2} "
 
-                # Add tab along right edge:
 
     ## BOTTOM SIDE
 
@@ -223,9 +223,10 @@ class BoxMaker(inkex.Effect):
     group.add(getLine(h))
 
 
-    ## If we had top foldover tabs, add the slots fot them
+    ## If we had top foldover tabs, add the slots for them
+    ## but ONLY if there is a box bottom to draw them on
     t= t2/2
-    if (boxtop==2):
+    if (boxtop==2) and (boxbottom != 1):
         dd3 = ((dd-(2*t2))/3)
         ww3 = ((ww-(2*t2))/3)
         wd3 = dd3
@@ -245,6 +246,61 @@ class BoxMaker(inkex.Effect):
                 o += ww3 + ww3 + dd3
                 wd3 = dd3
             o += t5 + t
+
+    ## If we wanted fold lines - add them
+    if self.options.foldlines == "true":
+
+        # Draw two rows of horizontal lines
+        sides = []
+        if (boxtop != 1):
+            sides.append([boxtop,-t])
+        if (boxbottom != 1):
+            sides.append([boxbottom,t+hh])
+        for (box,yy) in sides:
+
+            # First Side
+            h=f"M {t5},{yy} "
+            h+=f"l {ww-t2-t2-(t2/2)-t5},0"
+            group.add(getLine(h,stroke='#0000ff'))
+
+            if (box == 2):
+                yy -= t
+
+            # Second Side
+            h=f"M {ww+t2+t5},{yy} "
+            h+=f"l {dd-t2-t2-(t2/2)-t5},0"
+            group.add(getLine(h,stroke='#0000ff'))
+
+            # Third Side
+            h=f"M {ww+t2+t5 + dd+t2},{yy} "
+            h+=f"l {ww-t2-t2-(t2/2)-t5},0"
+            group.add(getLine(h,stroke='#0000ff'))
+
+            # Fourth Side
+            h=f"M {ww+t2+t5 + dd+t2 + ww+t2},{yy} "
+            h+=f"l {dd-t2-t2-(t2/2)-t5},0"
+            group.add(getLine(h,stroke='#0000ff'))
+
+        # Draw Vertical Ones
+        # First Side
+        x = ww+t+hh-(2*t5)
+        h=f"M {ww+t},{t5} "
+        h+=f"l 0,{hh-(2*t5)}"
+        group.add(getLine(h,stroke='#0000ff'))
+
+        h=f"M {ww+t+dd+t2},{t5} "
+        h+=f"l 0,{hh-(2*t5)}"
+        group.add(getLine(h,stroke='#0000ff'))
+
+        h=f"M {ww+t+dd+t2+ww+t2},{t5} "
+        h+=f"l 0,{hh-(2*t5)}"
+        group.add(getLine(h,stroke='#0000ff'))
+
+        # Tab only if selected
+        if self.options.sidetab == "true":
+            h=f"M {ww+t+dd+t2+ww+t2+dd+t2},{t2} "
+            h+=f"l 0,{hh-(2*t2)}"
+            group.add(getLine(h,stroke='#0000ff'))
     return
     
 
