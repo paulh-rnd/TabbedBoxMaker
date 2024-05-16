@@ -8,14 +8,14 @@
 			<label>Dimensions</label>
 			<separator/>
 			<param name="unit" _gui-text="    Units" type="optiongroup" appearance="combo">
+				<option value="in">in</option>
 				<option value="mm">mm</option>
 				<option value="cm">cm</option>
-				<option value="in">in</option>
 			</param>
 
-			<param name="height" type="float" precision="3" min="0.0" max="10000.0" _gui-text="    Height">180</param>
-			<param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Width">240</param>
-			<param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Depth">50</param>
+			<param name="height" type="float" precision="3" min="0.0" max="10000.0" _gui-text="    Height">3</param>
+			<param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Width">4</param>
+			<param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Depth">5</param>
 
 			<spacer/>
 			<label>Tabs</label>
@@ -32,8 +32,8 @@
 				<_option value="1">Hairline (0.002" for Epilog)</_option>
 			</param>
 
-			<param name="thickness" type="float" precision="2" min="0.0" max="10000.0" _gui-text="    Material Thickness">3.0</param>
-			<param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Kerf (cut width)">0.1</param>
+			<param name="thickness" type="float" precision="3" min="0.0" max="10000.0" _gui-text="    Material Thickness">0.125</param>
+			<param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Kerf (cut width)">0.015</param>
 
 			<spacer/>
 			<label>Layout</label>
@@ -52,7 +52,7 @@
 				<option value="4">Locking Fold</option>
 			</param>
 
-			<param name="sidetab" type="bool"  _gui-text="    Side Tab"></param>
+			<param name="sidetab" type="bool"  _gui-text="Side Tab"></param>
 			<param name="foldlines" type="bool"  _gui-text="Add Fold Lines"></param>
 
 		</vbox>

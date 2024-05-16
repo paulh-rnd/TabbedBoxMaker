@@ -70,6 +70,7 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
         # Invert offsets for bottom side
         dd *= -1
         ww *= -1
+        hh *= -1
         t5 *= -1
         t2 *= -1
         k2 *= -1
@@ -88,9 +89,11 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
     else:
         if ((sidetype == 2) and (sidenumber !=1)):
             ## SPECIAL CASE - because this is a double fold (all the way down!)
-            h+=f"l {t5},0 l 0,{-1*((t2*2)-(k2))} l {-1*t5},0 " # DOUBLE Leading Vertical Fold Notch
+            #h+=f"l {t5},0 l 0,{-1*((t2*2)-(k2))} l {-1*t5},0 " # DOUBLE Leading Vertical Fold Notch
+            h+=f"a {(t2+t2-k2)/2} {-1*(t2+t2-k2)/2} 180 1 0 0,{-1*(t2+t2-k2)} " # Trailing Vertical Fold Notch
         else:
-            h+=f"l {t5},0 l 0,{-1*(t2-k2)} l {-1*t5},0 " # Leading Vertical Fold Notch
+            #h+=f"l {t5},0 l 0,{-1*(t2-k2)} l {-1*t5},0 " # Leading Vertical Fold Notch
+            h+=f"a {(t2-k2)/2} {-1*(t2-k2)/2} 180 1 0 0,{-1*(t2-k2)} " # Trailing Vertical Fold Notch
 
         if (sidetype == 2):
             # Flat top w/ Side Folds - Full Depth top on one side, Full height on all else
@@ -100,11 +103,13 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
                 # Top Tab - Fill width will be wd+k2
                 #h+=f"l {wd+(k2)},0 "
                 h+=f"l {t5},0 "
-                h+=f"l {t2},0 l 0,{-1*(t2-k2)} l {-1*t2},0 " # Leading Vertical Fold Notch
+                #h+=f"l {t2},0 l 0,{-1*(t2-k2)} l {-1*t2},0 " # Leading Horizontal Fold Notch
+                h+=f"a {(t2-k2)/2} {(t2-k2)/2} 180 1 0 0,{-(t2-k2)} " # Trailing Horizontal Fold Notch
                 h+=f"l {t5},{-(hh+k2)} "
                 h+=f"l {(wd+k2)-(t5*4)},0 "
                 h+=f"l {t5},{(hh+k2)} "
-                h+=f"l {-1*t2},0 l 0,{t2-k2} l {t2},0 " # Trailing Vertical Fold Notch
+                #h+=f"l {-1*t2},0 l 0,{t2-k2} l {t2},0 " # Trailing Horizontal Fold Notch
+                h+=f"a {(t2-k2)/2} {(t2-k2)/2} 180 1 0 0,{t2-k2} " # Trailing Horizontal Fold Notch
                 h+=f"l {t5},0 "
 
                 h+=f"l 0,{dw+(k2)} "
@@ -112,11 +117,11 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
                 # Side down-folds - since they are 180 degree, will have double knockouts
                 h+=f"l {t2},{-1*(hh+k2)} "
                 wd3 = (wd+k2-(2*t2))/3
-                h+=f"l {wd3},0 "
-                h+=f"l 0,{-t2} "
-                h+=f"l {wd3},0 "
-                h+=f"l 0,{t2} "
-                h+=f"l {wd3},0 "
+                h+=f"l {wd3-(k2/2)},0 "
+                h+=f"l {t2/2},{-t2} "
+                h+=f"l {wd3+k2-t2},0 "
+                h+=f"l {t2/2},{t2} "
+                h+=f"l {wd3-(k2/2)},0 "
                 h+=f"l {t2},{hh+(k2)} "
         else:
             # Standard fold - half depth/width on each side
@@ -126,12 +131,15 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
 
         if ((sidetype == 2) and (sidenumber !=1)):
             ## SPECIAL CASE - because this is a double fold (all the way down!)
-            h+=f"l {-1*t5},0 l 0,{(2*t2)-(k2)} l {t5},0 " # Trailing Vertical Fold Notch
+            #h+=f"l {-1*t5},0 l 0,{(2*t2)-(k2)} l {t5},0 " # Trailing Vertical Fold Notch
+            h+=f"a {(t2+t2-k2)/2} {(t2+t2-k2)/2} 180 1 0 0,{(t2+t2-k2)} " # Trailing Vertical Fold Notch
         else:
-            h+=f"l {-1*t5},0 l 0,{t2-k2} l {t5},0 " # Trailing Vertical Fold Notch
+            #h+=f"l {-1*t5},0 l 0,{t2-k2} l {t5},0 " # Trailing Vertical Fold Notch
+            h+=f"a {(t2-k2)/2} {(t2-k2)/2} 180 1 0 0,{t2-k2} " # Trailing Vertical Fold Notch
 
     if ((topside) and (sidenumber != 4)) or ((not topside) and (sidenumber != 1)):
-        h+=f"l 0,{t5} l {t2-(k2)},0 l 0,{-1*t5} " # Trailing Horizontal Fold Notch
+        #h+=f"l 0,{t5} l {t2-(k2)},0 l 0,{-1*t5} " # Trailing Horizontal Fold Notch
+        h+=f"a {(t2-k2)/2} {(t2-k2)/2} 180 1 0 {t2-k2},0 " # Trailing Horizontal Fold Notch
 
     return h
 
@@ -183,15 +191,16 @@ class BoxMaker(inkex.Effect):
         linethickness=self.svg.unittouu('0.002in')
     else:
         linethickness=1
-    h=f"M 0,0 "
     hh=self.svg.unittouu(str(self.options.height)+unit)
     ww=self.svg.unittouu(str(self.options.width)+unit)
     dd=self.svg.unittouu(str(self.options.depth)+unit)
     t2=self.svg.unittouu(str(self.options.thickness*2)+unit)
     t5=self.svg.unittouu(str(self.options.thickness*5)+unit)
-    k=self.svg.unittouu(str(self.options.kerf*5)+unit)
-    k2 = k
+    k=self.svg.unittouu(str(self.options.kerf)+unit)
+    k1=self.svg.unittouu(str(self.options.kerf)+unit)
+    k2 = k1*2
 
+    h=f"M {-k},{-k} "
     # First Side
     h+= boxedge(hh,ww,dd,k2,t5,t2,boxtop,True,1)
     h+= boxedge(hh,ww,dd,k2,t5,t2,boxtop,True,2)
@@ -203,11 +212,20 @@ class BoxMaker(inkex.Effect):
 
     # Add tab along right edge if wanted (else, straight edge)
     if self.options.sidetab == "true":
-        h+=f"l 0,{t2} l {t2-(k2)},0 l 0,{-1*t2} " # Leading Vertical Fold Notch
-        h+=f"l {t5+k2},{t2} "
-        h+=f"l 0,{hh+k2-(2*t2)} "
-        h+=f"l {-(t5+k2)},{t2} "
-        h+=f"l 0,{-t2} l {-(t2-(k2))},0 l 0,{t2} " # Leading Vertical Fold Notch
+        if (boxtop == 1):
+            h+=f"l {t5},{t2} l 0,{t2*2} "
+        else:
+            h+=f"l 0,{t2+k2} l {-t2},0"
+            h+=f"l 0,{t2-k2} a {(t2-k2)/2} {(t2-k2)/2} 180 1 0 {t2-k2},0 " # Trailing Vertical Fold Notch
+            h+=f"l {t5+k2},{t2} "
+        h+=f"l 0,{hh+k2-(6*t2)} "
+
+        if (boxbottom == 1):
+            h+=f"l 0,{t2*2} l {-1*(t5)},{t2} "
+        else:
+            h+=f"l {-(t5+k2)},{t2} "
+            h+=f"a {(t2-k2)/2} {(t2-k2)/2} 180 1 0 {-1*(t2-k2)},0 l 0,{t2-k2} " # Trailing Vertical Fold Notch
+            h+=f"l {t2},0 l 0,{t2+k2} "
     else:
         h+=f"l 0,{hh+k2} "
 
@@ -232,7 +250,7 @@ class BoxMaker(inkex.Effect):
         wd3 = dd3
         o=ww + t2 + wd3 +  k2 + (t2/2)
         for i in range (1,4):
-            h=f"M {o},{hh+(t/4)+k2} "
+            h=f"M {o-k},{hh+(t/4)+k} "
             h+=f"l {wd3+t2-k2},0 "
             h+=f"l 0,{(t*1.5)-k2} "
             h+=f"l {-wd3+k2-t2},0 "
@@ -250,12 +268,15 @@ class BoxMaker(inkex.Effect):
     ## If we wanted fold lines - add them
     if self.options.foldlines == "true":
 
-        # Draw two rows of horizontal lines
+        # Draw horizontal lines for top and/or bottom tabs
+        # Only needed when there is a top or bottom to fold over
+
         sides = []
         if (boxtop != 1):
             sides.append([boxtop,-t])
         if (boxbottom != 1):
             sides.append([boxbottom,t+hh])
+
         for (box,yy) in sides:
 
             # First Side
@@ -281,6 +302,14 @@ class BoxMaker(inkex.Effect):
             h+=f"l {dd-t2-t2-(t2/2)-t5},0"
             group.add(getLine(h,stroke='#0000ff'))
 
+            if (box == 2):
+                #h=f"M {ww+t2+t5 + dd+t2 + ww+t2},{yy} "
+                #h+=f"l {dd-t2-t2-(t2/2)-t5},0"
+                #group.add(getLine(h,stroke='#0000ff'))
+                h=f"M {t5+t5},{-1*(dd+t2+(t2/2))} "
+                h+=f"l {ww-(4*t5)},0 "
+                group.add(getLine(h,stroke='#0000ff'))
+
         # Draw Vertical Ones
         # First Side
         x = ww+t+hh-(2*t5)
@@ -296,11 +325,15 @@ class BoxMaker(inkex.Effect):
         h+=f"l 0,{hh-(2*t5)}"
         group.add(getLine(h,stroke='#0000ff'))
 
+
         # Tab only if selected
         if self.options.sidetab == "true":
-            h=f"M {ww+t+dd+t2+ww+t2+dd+t2},{t2} "
-            h+=f"l 0,{hh-(2*t2)}"
-            group.add(getLine(h,stroke='#0000ff'))
+            h=f"M {ww+t+dd+t2+ww+t2+dd},{t5+t2} "
+            h+=f"l 0,{hh-(t5+t2+t5+t2)}"
+            group.add(getLine(h,stroke='#ff0000'))
+
+    ## End Fold Lines
+
     return
     
 
