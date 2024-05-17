@@ -127,37 +127,40 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
             # Locking fold - Top and bottom are different, sides are mirrors
 
             if (sidenumber == 1):
-                zz = dw / 5
+                zz = wd / 5
                 h += f"l 0,{(-1*((hh)-t2))-k2} "
                 h += f"l {zz+k2},0 "
                 h += f"l 0,{(hh/2)-t2} "
-                h += f"l {(dw-k2)-(zz*2)},0 "
+                h += f"l {(wd-k2)-(zz*2)},0 "
+                #h += f"l {(zz*3)},0 "
                 h += f"l 0,{-(hh/2)+t2} "
                 h += f"l {zz+k2},0 "
                 h += f"l 0,{(hh)-t2+k2} "
-                # h+=f"l {wd+k2},0 " # Top open (plain flat side)
+                #h+=f"l {wd+k2},0 " # Top open (plain flat side)
             elif (sidenumber == 3):
                 zz = wd /5
                 h += f"l 0,{(-1*(hh/2))-k2} "
                 h += f"l {zz},0 "
                 h += f"l 0,{-1*((hh/2)-t2)} "
-                h += f"l {(dw)-(zz*2)},0 "
+                h += f"l {(wd)-(zz*2)},0 "
                 h += f"l 0,{(hh/2)-t2} "
                 h += f"l {zz+k2},0 "
                 h += f"l 0,{(hh/2)+k2} "
             elif (sidenumber == 2):
                 wdk24 = (wd+k2)/4
+                h4 = hh/4
                 h+=f"l {t2},{-t5} "
-                h+=f"l 0,{-1*(wd+k2-t5)} " 
+                h+=f"l 0,{-1*(hh+k2-t5-t2)} " 
                 h+=f"l {(wdk24*3)+k2},0 " 
-                h+=f"l {-wdk24},{wdk24*2} "
-                h+=f"l {(wdk24*2)-t2-k2},{(wdk24*2)} "
+                h+=f"l {-wdk24},{(h4*2)-t2} "
+                h+=f"l {(wdk24*2)-t2-k2},{(h4*2)} "
             elif (sidenumber == 4):
                 wdk24 = (wd+k2)/4
-                h+=f"l {(wdk24*2)-t2},{wdk24*-2} "
-                h+=f"l {-wdk24},{wdk24*-2} "
+                h4 = hh/4
+                h+=f"l {(wdk24*2)-t2},{h4*-2} "
+                h+=f"l {-wdk24},{(h4*-2)} "
                 h+=f"l {(wdk24*3)},0 " 
-                h+=f"l 0,{1*(wd+k2-t5)} " 
+                h+=f"l 0,{1*(hh+k2-t5)} " 
                 h+=f"l {t2},{t5} "
 
 
