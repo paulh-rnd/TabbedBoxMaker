@@ -127,40 +127,38 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
             # Locking fold - Top and bottom are different, sides are mirrors
 
             if (sidenumber == 1):
-                zz = wd / 5
-                h += f"l 0,{(-1*((hh)-t2))-k2} "
-                h += f"l {zz+k2},0 "
-                h += f"l 0,{(hh/2)-t2} "
-                h += f"l {(wd-k2)-(zz*2)},0 "
+                h += f"l 0,{(-1*((dd)-t2))-k2} "
+                h += f"l {(dd/2)+k2},0 "
+                h += f"l 0,{(dd/2)-t2} "
+                h += f"l {(ww-k2)-(dd)},0 "
                 #h += f"l {(zz*3)},0 "
-                h += f"l 0,{-(hh/2)+t2} "
-                h += f"l {zz+k2},0 "
-                h += f"l 0,{(hh)-t2+k2} "
+                h += f"l 0,{-(dd/2)+t2} "
+                h += f"l {(dd/2)+k2},0 "
+                h += f"l 0,{(dd)-t2+k2} "
                 #h+=f"l {wd+k2},0 " # Top open (plain flat side)
             elif (sidenumber == 3):
-                zz = wd /5
-                h += f"l 0,{(-1*(hh/2))-k2} "
-                h += f"l {zz},0 "
-                h += f"l 0,{-1*((hh/2)-t2)} "
-                h += f"l {(wd)-(zz*2)},0 "
-                h += f"l 0,{(hh/2)-t2} "
-                h += f"l {zz+k2},0 "
-                h += f"l 0,{(hh/2)+k2} "
+                h += f"l 0,{(-1*(dd/2))-k2} "
+                h += f"l {dd/2},0 "
+                h += f"l 0,{-1*((dd/2)-t2)} "
+                h += f"l {(ww)-(dd)+k2},0 "
+                h += f"l 0,{(dd/2)-t2} "
+                h += f"l {dd/2},0 "
+                h += f"l 0,{(dd/2)+k2} "
             elif (sidenumber == 2):
-                wdk24 = (wd+k2)/4
-                h4 = hh/4
                 h+=f"l {t2},{-t5} "
-                h+=f"l 0,{-1*(hh+k2-t5-t2)} " 
-                h+=f"l {(wdk24*3)+k2},0 " 
-                h+=f"l {-wdk24},{(h4*2)-t2} "
-                h+=f"l {(wdk24*2)-t2-k2},{(h4*2)} "
+                h+=f"l 0,{-1*(dd+k2-t5-t2)} " 
+                h+=f"l {(dd/2)+(dd/8)},0 "
+                h+=f"q {(dd/4)+(2*k2)},0 {(-dd/8)-t2+k2},{(dd/2)-t2-(k2/4)} " 
+                h+=f"l {(dd/2)},{(dd/2)} "
+                if (k2 > 0): h+=f"l 0,{(k2/2)} "
             elif (sidenumber == 4):
-                wdk24 = (wd+k2)/4
-                h4 = hh/4
-                h+=f"l {(wdk24*2)-t2},{h4*-2} "
-                h+=f"l {-wdk24},{(h4*-2)} "
-                h+=f"l {(wdk24*3)},0 " 
-                h+=f"l 0,{1*(hh+k2-t5)} " 
+                if (k2 > 0): h+=f"l 0,{-k2} "
+                h+=f"l {(dd/2)},{(-dd/2)+(k2/2)} "
+                h+=f"q {(-dd/2)},{-dd/3} {(-dd/8)-t2+k2},{(-dd/2)+t2} " 
+                #h+=f"l {(-dd/2)-(k2/2)},{(-dd/2)+t2-(k2/2)} "
+                h+=f"l {(dd/2)+(dd/8)},0 "
+                #h+=f"l 0,{1*(dd-t5-t2+(k2/2))} " 
+                h+=f"l 0,{1*(dd+k2-t5-t2)} " 
                 h+=f"l {t2},{t5} "
 
 
@@ -221,6 +219,7 @@ class BoxMaker(inkex.Effect):
     svg = self.document.getroot()
     
         # Get the attributes:
+    #inkex.utils.errormsg("Testing")
     widthDoc  = self.svg.unittouu(svg.get('width'))
     heightDoc = self.svg.unittouu(svg.get('height'))
     group = newGroup(self)
@@ -228,6 +227,8 @@ class BoxMaker(inkex.Effect):
     boxtop = self.options.boxtop
     boxbottom = self.options.boxbottom
     # Set the line thickness
+
+
     if self.options.hairline:
         linethickness=self.svg.unittouu('0.002in')
     else:
@@ -240,6 +241,10 @@ class BoxMaker(inkex.Effect):
     k=self.svg.unittouu(str(self.options.kerf)+unit)
     k1=self.svg.unittouu(str(self.options.kerf)+unit)
     k2 = k1*2
+
+    if ((boxtop==4) or (boxbottom==4)) and ((dd*3) > ww):
+        inkex.utils.errormsg("For locking folds, width must be at least 3x the depth")
+        return
 
     h=f"M {-k},{-k} "
     # First Side
