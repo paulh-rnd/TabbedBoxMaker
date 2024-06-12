@@ -95,7 +95,7 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
             #h+=f"l {t5},0 l 0,{-1*(t2-k2)} l {-1*t5},0 " # Leading Vertical Fold Notch
             h+=f"a {(t2-k2)/2} {-1*(t2-k2)/2} 180 1 0 0,{-1*(t2-k2)} " # Trailing Vertical Fold Notch
 
-        if (sidetype == 2):
+        if (sidetype == 2) or (sidetype == 5):
             # Flat top w/ Side Folds - Full Depth top on one side, Full height on all else
             if (sidenumber == 1):
                 # Top side full depth 
@@ -113,6 +113,29 @@ def boxedge(hh,ww,dd,k2,t5,t2,sidetype,topside,sidenumber):
                 h+=f"l {t5},0 "
 
                 h+=f"l 0,{dw+(k2)} "
+            elif (sidetype == 5) and (sidenumber == 3):
+                # Draw Locking tab
+                #h+=f"l 0,{-1*((dw/2)+(k2))} "
+                if (k2 > 0): h+=f"l 0,{-k2} "
+                h+=f"l {(wd/3)-t2+k2},0 "
+                h+=f"l 0,{hh/2} "
+                h+=f"l {t2-k2},0 "
+                h+=f"l 0,{(hh/-2)} "
+
+                h+=f"a {(t2-k2)/2} {(t2-k2)/2} 180 1 0 0,{-(t2-k2)} " # Trailing Horizontal Fold Notch
+                if (k2 > 0): h+=f"l 0,{-k2} "
+                h+=f"l {(t2*3)},{(-t2*4)} "
+                h+=f"l {(wd/3)+k2-(t2*6)},0 "
+                h+=f"l {(t2*3)},{(t2*4)} "
+                if (k2 > 0): h+=f"l 0,{k2} "
+                h+=f"a {(t2-k2)/2} {(t2-k2)/2} 180 1 0 0,{t2-k2} " # Trailing Horizontal Fold Notch
+
+                h+=f"l 0,{(hh/2)} "
+                h+=f"l {t2-k2},0 "
+                h+=f"l 0,{hh/-2} "
+                h+=f"l {(wd/3)-(t2)+k2},0 "
+                if (k2 > 0): h+=f"l 0,{k2} "
+                #h+=f"l 0,{(dw/2)+(k2)} "
             else:
                 # Side down-folds - since they are 180 degree, will have double knockouts
                 h+=f"l {t2},{-1*(hh+k2)} "
@@ -310,6 +333,20 @@ class BoxMaker(inkex.Effect):
                 o += ww3 + ww3 + dd3
                 wd3 = dd3
             o += t5 + t
+
+    # Draw slots for locking top
+    if (boxtop == 5):
+      wd3 = ((ww-(2*t2))/3)
+      h=f"M {(ww/3)+(k/2)},{-dd-(t2)+k} "
+      h+=f"l {wd3+t2-k},0 "
+      h+=f"a {(t*1.0)-k2} {(t*1.0)-k2} 180 0 1 0,{(t*2.5)-k2} " # Trailing Horizontal Fold Notch
+      #h+=f"l 0,{(t*2.5)-k2} "
+      h+=f"l {-wd3+k-t2},0 "
+      #h+=f"l 0,{(-t*2.5)+k2} "
+      h+=f"a {(t*1.0)-k2} {(t*1.0)-k2} 180 0 1 0,{(-t*2.5)+k2} " # Trailing Horizontal Fold Notch
+      h+="Z"
+      group.add(getLine(h))
+
 
     ## If we wanted fold lines - add them
     if self.options.foldlines == "true":

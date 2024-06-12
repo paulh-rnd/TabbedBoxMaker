@@ -42,6 +42,7 @@
 			<param name="boxtop" _gui-text="    Box Top" type="optiongroup" appearance="combo">
 				<option value="1">None</option>
 				<option value="2">Flat Top w/ Sidefolds</option>
+				<option value="5">Locking Top w/ Sidefolds</option>
 				<option value="3">Standard Fold</option>
 				<option value="4">Locking Fold</option>
 			</param>
