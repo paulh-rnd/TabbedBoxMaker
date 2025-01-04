@@ -319,7 +319,7 @@ def side(group,root,startOffset,endOffset,tabVec,prevTab,length,direction,isTab,
   group.add(getLine(s))
   return s
 
-  
+
 class BoxMaker(inkex.Effect):
   def __init__(self):
       # Call the base class constructor.
@@ -379,6 +379,8 @@ class BoxMaker(inkex.Effect):
         dest='div_w',default=25,help='Dividers (Width axis)')
       self.arg_parser.add_argument('--keydiv',action='store',type=int,
         dest='keydiv',default=3,help='Key dividers into walls/floor')
+      self.arg_parser.add_argument('--optimize',action='store',type=inkex.utils.Boolean,
+        dest='optimize',default=True,help='Optimize paths')
 
   def effect(self):
     global group,nomTab,equalTabs,tabSymmetry,dimpleHeight,dimpleLength,thickness,kerf,halfkerf,dogbone,divx,divy,hairline,linethickness,keydivwalls,keydivfloor
@@ -659,6 +661,7 @@ class BoxMaker(inkex.Effect):
       railholes = 1 if piece[6]==3 else 0
 
       group = newGroup(self)
+      groups = [group]
       
       if schroff and railholes:
         log("rail holes enabled on piece %d at (%d, %d)" % (idx, x+thickness,y+thickness))
@@ -713,21 +716,119 @@ class BoxMaker(inkex.Effect):
 
         y=4*spacing+1*Y+2*Z  # root y co-ord for piece 
         for n in range(0,divx): # generate X dividers
-          group = newGroup(self)
+          subGroup = newGroup(self)
+          groups.append(subGroup)
           x=n*(spacing+X)  # root x co-ord for piece      
-          side(group,(x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dtabs,dx,(1,0),a,1,0,0)          # side a
-          side(group,(x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if b else -thickness),atabs,dy,(0,1),b,1,divy*xholes,xspacing)    # side b
-          side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),btabs,dx,(-1,0),c,1,0,0) # side c
-          side(group,(x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),ctabs,dy,(0,-1),d,1,0,0)      # side d
+          side(subGroup,(x,y),(d,a),(-b,a),keydivfloor*atabs*(-thickness if a else thickness),dtabs,dx,(1,0),a,1,0,0)          # side a
+          side(subGroup,(x+dx,y),(-b,a),(-b,-c),keydivwalls*btabs*(thickness if b else -thickness),atabs,dy,(0,1),b,1,divy*xholes,xspacing)    # side b
+          side(subGroup,(x+dx,y+dy),(-b,-c),(d,-c),keydivfloor*ctabs*(thickness if c else -thickness),btabs,dx,(-1,0),c,1,0,0) # side c
+          side(subGroup,(x,y+dy),(d,-c),(d,a),keydivwalls*dtabs*(-thickness if d else thickness),ctabs,dy,(0,-1),d,1,0,0)      # side d
       elif idx==1:
         y=5*spacing+1*Y+3*Z  # root y co-ord for piece 
         for n in range(0,divy): # generate Y dividers
-          group = newGroup(self)
+          subGroup = newGroup(self)
+          groups.append(subGroup)
           x=n*(spacing+Z)  # root x co-ord for piece
-          side(group,(x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dtabs,dx,(1,0),a,1,divx*yholes,yspacing)          # side a
-          side(group,(x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),atabs,dy,(0,1),b,1,0,0)     # side b
-          side(group,(x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),btabs,dx,(-1,0),c,1,0,0) # side c
-          side(group,(x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),ctabs,dy,(0,-1),d,1,0,0)      # side d
+          side(subGroup,(x,y),(d,a),(-b,a),keydivwalls*atabs*(-thickness if a else thickness),dtabs,dx,(1,0),a,1,divx*yholes,yspacing)          # side a
+          side(subGroup,(x+dx,y),(-b,a),(-b,-c),keydivfloor*btabs*(thickness if b else -thickness),atabs,dy,(0,1),b,1,0,0)     # side b
+          side(subGroup,(x+dx,y+dy),(-b,-c),(d,-c),keydivwalls*ctabs*(thickness if c else -thickness),btabs,dx,(-1,0),c,1,0,0) # side c
+          side(subGroup,(x,y+dy),(d,-c),(d,a),keydivfloor*dtabs*(-thickness if d else thickness),ctabs,dy,(0,-1),d,1,0,0)      # side d
+
+      if self.options.optimize:
+        # Step 1: Combine paths to form the outer boundary
+        for group in groups:
+            for path_element in [child for child in group.descendants() if isinstance(child, inkex.PathElement)]:
+              path = inkex.Path(path_element.path)
+
+              if path[-1].letter in "zZ":
+                continue # Path is already closed
+
+              path_first = path[0]
+              path_last = path[-1]
+
+              for other_element in [child for child in group.descendants() if isinstance(child, inkex.PathElement)]:
+                if other_element == path_element:
+                  continue
+
+                other_path = inkex.Path(other_element.path)
+
+                if other_path[-1].letter in "zZ":
+                  continue
+
+                other_first = other_path[0]
+                other_last = other_path[-1]
+
+                if other_first.x == path_last.x and other_first.y == path_last.y:
+                  other_element.path = str(path + other_path[1:])
+                  group.remove(path_element)
+                  break
+                elif other_last.x == path_first.x and other_last.y == path_last.y:
+                  other_element.path = str(other_path + path[1:])
+                  group.remove(path_element)
+                  break
+
+              # Try to combine next path
+              last_path_element = path_element
+
+            # Step 2: Close the first (outline) path, if not already closed
+            last_path_element = [child for child in group.descendants() if isinstance(child, inkex.PathElement)][0]
+            path = inkex.Path(last_path_element.path)
+            if path[-1].letter not in "zZ":  # Check if the last command is not 'Z'
+                path.close() # Append a close path command
+                last_path_element.path = str(path)  # Update the element's path
+
+            # Step 3: Remove unneeded generated nodes (duplicates and intermediates on h/v lines)
+            for path_element in group.descendants():
+              if not isinstance(path_element, inkex.PathElement):
+                continue
+
+              path = inkex.Path(path_element.path)
+
+              simplified_path = []
+              prev = None  # Previous point
+              current_dir = None  # Current direction ('h' or 'v')
+
+              for segment in path:
+                if isinstance(segment, inkex.paths.ZoneClose):
+                  simplified_path.append(segment)
+                  continue
+
+                if isinstance(segment, inkex.paths.Line):
+                  if prev is not None:
+                      dx = segment.x - prev.x
+                      dy = segment.y - prev.y
+
+                      if dx == 0 and dy == 0:
+                        continue # Skip node
+
+                      # Determine the direction
+                      direction = 'h' if dy == 0 else 'v' if dx == 0 else None
+
+                      # Skip redundant points on straight lines
+                      if direction == current_dir:
+                          # Replace the last point in simplified_path
+                          simplified_path[-1] = segment
+                      else:
+                          simplified_path.append(segment)
+                          current_dir = direction
+                  else:
+                      simplified_path.append(segment)
+                  prev = segment
+                else:
+                  simplified_path.append(segment)
+                  prev = None
+                  current_dir = None
+                  direction = None
+
+              path_element.path = str(inkex.Path(simplified_path))
+
+            # Last step: If the group now just contains one path, remove the group around this path
+            if len(group) == 1:
+              parent = group.getparent()
+
+              parent.append(group[0])
+              parent.remove(group)
+
 
 # Create effect instance and apply it.
 effect = BoxMaker()

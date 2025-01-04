@@ -22,6 +22,7 @@
 			<param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Width">240</param>
 			<param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Height">50</param>
 
+			<param name="optimize" type="boolean" _gui-text="Combine and clean paths">true</param>
 			<spacer/>
 			<label>Tabs</label>
 			<separator/>
