@@ -814,6 +814,12 @@ class BoxMaker(inkex.Effect):
                   else:
                       simplified_path.append(segment)
                   prev = segment
+                elif isinstance(segment, inkex.paths.Move):
+                  # Initial move. Add initial data
+                  simplified_path.append(segment)
+                  prev = segment
+                  current_dir = None
+                  direction = None
                 else:
                   simplified_path.append(segment)
                   prev = None
