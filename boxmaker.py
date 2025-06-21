@@ -29,6 +29,8 @@ except ImportError:
     _ = lambda x: x  # Simple fallback for translation
 
 from boxmaker_core import BoxMakerCore
+from boxmaker_constants import BoxType, TabType, LayoutStyle
+from boxmaker_exceptions import BoxMakerError, DimensionError, TabError, MaterialError
 
 linethickness = 1 # default unless overridden by settings
 
@@ -66,9 +68,9 @@ def create_cli_parser():
     parser.add_argument('--thickness', type=float, default=3.0, help='Material thickness (mm)')
     parser.add_argument('--kerf', type=float, default=0.5, help='Kerf width (mm)')
     parser.add_argument('--tab', type=float, default=25.0, help='Tab width (mm)')
-    parser.add_argument('--style', type=int, choices=[1, 2, 3], default=1, help='Layout style')
-    parser.add_argument('--boxtype', type=int, choices=range(1, 7), default=1, help='Box type')
-    parser.add_argument('--tabtype', type=int, choices=[0, 1], default=0, help='Tab type (0=laser, 1=mill)')
+    parser.add_argument('--style', type=int, choices=[1, 2, 3], default=LayoutStyle.SEPARATED, help='Layout style')
+    parser.add_argument('--boxtype', type=int, choices=range(1, 7), default=BoxType.FULL_BOX, help='Box type')
+    parser.add_argument('--tabtype', type=int, choices=[0, 1], default=TabType.LASER, help='Tab type (0=laser, 1=mill)')
     parser.add_argument('--div-l', type=int, default=0, help='Dividers along length')
     parser.add_argument('--div-w', type=int, default=0, help='Dividers along width')
     parser.add_argument('--output', '-o', type=str, default='box.svg', help='Output SVG file')
@@ -115,6 +117,22 @@ def main():
                 f.write(svg_content)
             
             print(f"Box SVG generated: {args.output}")
+            
+        except DimensionError as e:
+            print(f"❌ Dimension Error: {e}")
+            print("💡 Tip: All dimensions should be at least 40mm for practical boxes")
+            sys.exit(1)
+        except TabError as e:
+            print(f"❌ Tab Error: {e}")
+            print("💡 Tip: Use tabs between material thickness and dimension/3")
+            sys.exit(1)
+        except MaterialError as e:
+            print(f"❌ Material Error: {e}")
+            print("💡 Tip: Material thickness should be much smaller than box dimensions")
+            sys.exit(1)
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            sys.exit(1)
             
         except ValueError as e:
             print(f"Error: {e}")

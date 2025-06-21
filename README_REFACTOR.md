@@ -1,5 +1,7 @@
 # TabbedBox2 - Refactored for Testability
 
+[![CI - Test and Validate BoxMaker](https://github.com/YOUR_USERNAME/TabbedBox2/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/TabbedBox2/actions/workflows/ci.yml)
+
 This is a refactored version of the TabbedBoxMaker Inkscape extension that maintains full compatibility with Inkscape while adding CLI support and testability.
 
 ## What's New
@@ -8,12 +10,23 @@ This is a refactored version of the TabbedBoxMaker Inkscape extension that maint
 - **CLI Support**: Generate box SVGs from command line without Inkscape
 - **Testability**: Core functionality separated for easy testing
 - **Same Output**: Identical behavior to original when used in Inkscape
+- **Continuous Integration**: Automated testing on every commit and PR
 
 ### 🔧 Refactoring Details
 - **`boxmaker_core.py`**: Core box generation logic, no Inkscape dependencies
 - **`boxmaker.py`**: Inkscape extension wrapper + CLI support
 - **`test_boxmaker.py`**: Comprehensive test suite
 - **`cli_examples.py`**: Example CLI usage
+
+## Quality Assurance
+
+This project uses GitHub Actions for continuous integration:
+
+- **Automated Testing**: Full test suite runs on Python 3.8-3.12
+- **Cross-Platform**: Tested on Ubuntu, Windows, and macOS
+- **Performance Testing**: Stress tests with large boxes and complex layouts
+- **SVG Validation**: All generated files are validated for correctness
+- **Example Generation**: CLI examples run automatically to ensure they work
 
 ## Usage
 
@@ -67,11 +80,11 @@ This tests:
 - ✅ SVG file generation
 - ✅ Error handling
 - ✅ Different layouts
-- ✅ Sample file generation
+- ✅ Sample file generation (outputs to `test_results/`)
 
 ## Example Test Cases
 
-The test script generates these example files:
+The test script generates these example files in `test_results/`:
 
 1. **`test_basic_box_laser.svg`** - Standard laser-cut box
 2. **`test_basic_box_cnc.svg`** - Same box with CNC dogbone cuts
@@ -85,15 +98,36 @@ Run example CLI commands:
 python cli_examples.py
 ```
 
-This generates several sample boxes demonstrating different CLI usage patterns.
+This generates several sample boxes in `test_assets/` demonstrating different CLI usage patterns.
+
+## Directory Structure
+
+```
+├── boxmaker.py              # Main file (Inkscape extension + CLI)
+├── boxmaker_core.py         # Core box generation logic
+├── boxmaker.inx             # Inkscape interface definition
+├── test_boxmaker.py         # Test suite
+├── cli_examples.py          # CLI usage examples
+├── test_assets/             # Reference examples (keep in git)
+│   ├── basic_laser_box.svg
+│   ├── basic_cnc_box.svg
+│   ├── box_with_dividers.svg
+│   └── ...
+├── test_results/            # Generated during testing (gitignored)
+│   ├── test_basic_box_laser.svg
+│   └── ...
+└── .gitignore              # Excludes test_results/ and __pycache__/
+```
 
 ## Files
 
 - **`boxmaker.py`** - Main file (Inkscape extension + CLI)
 - **`boxmaker_core.py`** - Core box generation logic
 - **`boxmaker.inx`** - Inkscape interface definition (unchanged)
-- **`test_boxmaker.py`** - Test suite
-- **`cli_examples.py`** - CLI usage examples
+- **`test_boxmaker.py`** - Test suite (outputs to `test_results/`)
+- **`cli_examples.py`** - CLI usage examples (outputs to `test_assets/`)
+- **`test_assets/`** - Reference examples (tracked in git)
+- **`test_results/`** - Test outputs (gitignored, regenerated on each test)
 
 ## Key Benefits
 

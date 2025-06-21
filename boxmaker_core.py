@@ -1,54 +1,139 @@
 #! /usr/bin/env python -t
-'''
+"""
 Core BoxMaker functionality - refactored for testability
-'''
+"""
 
 import math
 import os
 import sys
 from copy import deepcopy
+from typing import List, Tuple, Optional, Dict, Any
+
+from boxmaker_constants import (
+    BoxType, TabType, LayoutStyle, KeyDividerType,
+    DEFAULT_LENGTH, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_TAB_WIDTH,
+    DEFAULT_THICKNESS, DEFAULT_KERF, DEFAULT_SPACING,
+    MIN_DIMENSION, MIN_THICKNESS, MIN_TAB_WIDTH,
+    MIN_TAB_TO_THICKNESS_RATIO, RECOMMENDED_MIN_TAB_TO_THICKNESS_RATIO,
+    MAX_TAB_TO_THICKNESS_RATIO, RECOMMENDED_MAX_TAB_TO_THICKNESS_RATIO,
+    MAX_DIMENSION, MAX_THICKNESS,
+    INCHES_TO_MM, HAIRLINE_THICKNESS_INCHES
+)
+from boxmaker_exceptions import DimensionError, TabError, MaterialError
 
 
 class BoxMakerCore:
+    """Core logic for generating tabbed box SVG files"""
+    
     def __init__(self):
-        # Default values
+        # Default values using constants
         self.unit = 'mm'
-        self.inside = 0
-        self.length = 100.0
-        self.width = 100.0
-        self.height = 100.0
-        self.tab = 25.0
+        self.inside = False
+        self.length = DEFAULT_LENGTH
+        self.width = DEFAULT_WIDTH
+        self.height = DEFAULT_HEIGHT
+        self.tab = DEFAULT_TAB_WIDTH
         self.equal = 0
         self.tabsymmetry = 0
-        self.tabtype = 0
+        self.tabtype = TabType.LASER
         self.dimpleheight = 0.0
         self.dimplelength = 0.0
         self.hairline = 0
-        self.thickness = 3.0
-        self.kerf = 0.5
-        self.style = 1
-        self.spacing = 25.0
-        self.boxtype = 1
+        self.thickness = DEFAULT_THICKNESS
+        self.kerf = DEFAULT_KERF
+        self.style = LayoutStyle.SEPARATED
+        self.spacing = DEFAULT_SPACING
+        self.boxtype = BoxType.FULL_BOX
         self.div_l = 0
         self.div_w = 0
-        self.keydiv = 3
+        self.keydiv = KeyDividerType.NONE
         self.optimize = True
-        
-        # Internal state
+          # Internal state
         self.linethickness = 1
-        self.paths = []
-        self.circles = []
+        self.paths: List[str] = []
+        self.circles: List[Tuple[float, Tuple[float, float]]] = []
         
-    def set_parameters(self, **kwargs):
-        """Set box parameters from keyword arguments"""
+    def set_parameters(self, **kwargs) -> None:
+        """Set box parameters from keyword arguments
+        
+        Args:
+            **kwargs: Parameter name-value pairs to set
+        """
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
     
-    def log(self, text):
+    def _validate_dimensions(self) -> None:
+        """Validate box dimensions are within acceptable ranges"""
+        dimensions = [
+            ('length', self.length),
+            ('width', self.width), 
+            ('height', self.height)
+        ]
+        
+        for name, value in dimensions:
+            if value < MIN_DIMENSION:
+                raise DimensionError(name, value, min_val=MIN_DIMENSION)
+            if value > MAX_DIMENSION:
+                raise DimensionError(name, value, max_val=MAX_DIMENSION)
+        
+        # Material thickness validation
+        if self.thickness < MIN_THICKNESS:
+            raise MaterialError(f"Material thickness ({self.thickness}) must be at least {MIN_THICKNESS}mm")
+        if self.thickness > MAX_THICKNESS:
+            raise MaterialError(f"Material thickness ({self.thickness}) must be no more than {MAX_THICKNESS}mm")        # Tab width validation
+        if self.tab < MIN_TAB_WIDTH:
+            raise TabError(f"Tab width ({self.tab}) must be at least {MIN_TAB_WIDTH}mm")
+          # Tab to thickness ratio validation (tabs can be thinner but become weak)
+        min_tab_for_thickness = self.thickness * MIN_TAB_TO_THICKNESS_RATIO
+        recommended_min_tab = self.thickness * RECOMMENDED_MIN_TAB_TO_THICKNESS_RATIO
+        recommended_max_tab = self.thickness * RECOMMENDED_MAX_TAB_TO_THICKNESS_RATIO
+        absolute_max_tab = self.thickness * MAX_TAB_TO_THICKNESS_RATIO
+        
+        if self.tab < min_tab_for_thickness:
+            raise TabError(f"Tab width ({self.tab}mm) is too small - minimum is {min_tab_for_thickness}mm "
+                          f"(thickness {self.thickness}mm × {MIN_TAB_TO_THICKNESS_RATIO}). "
+                          f"Tabs thinner than this become very weak.")
+        
+        # Issue warning for weak tabs (but don't fail)
+        if self.tab < recommended_min_tab:
+            self.log(f"Warning: Tab width ({self.tab}mm) is less than recommended minimum "
+                    f"({recommended_min_tab}mm). Tabs may be weak.")
+        
+        # Physical constraint: tabs can't be larger than smallest dimension / 3
+        min_dimension = min(self.length, self.width, self.height)
+        max_physical_tab = min_dimension / 3
+        
+        if self.tab > max_physical_tab:
+            raise TabError(f"Tab width ({self.tab}mm) is too large for smallest dimension ({min_dimension}mm). "
+                          f"Maximum tab width is {max_physical_tab:.1f}mm (dimension/3).")
+        
+        # Issue warning for unusually large tabs (but allow them for big boxes)
+        if self.tab > recommended_max_tab and self.tab <= absolute_max_tab:
+            self.log(f"Info: Large tab width ({self.tab}mm) is {self.tab/self.thickness:.1f}x material thickness. "
+                    f"This is fine for large boxes but may be excessive for smaller ones.")
+        
+        # Only fail for extremely large tabs that exceed physical limits
+        if self.tab > absolute_max_tab and self.tab <= max_physical_tab:
+            raise TabError(f"Tab width ({self.tab}mm) is excessively large "
+                          f"({self.tab/self.thickness:.1f}x thickness). "
+                          f"Consider using smaller tabs for better joint geometry.")
+          # Check if material is too thick for dimensions
+        min_dimension = min(self.length, self.width, self.height)
+        if self.thickness >= min_dimension / 2:
+            raise MaterialError(f"Material thickness ({self.thickness}) is too large for smallest dimension ({min_dimension})")
+        
+        # Check if thickness makes valid tabs impossible
+        max_tab_size = min_dimension / 3
+        if self.thickness > max_tab_size:
+            raise MaterialError(f"Material thickness ({self.thickness}) is too large to create valid tabs. "
+                               f"For {min_dimension}mm dimension, max thickness is {max_tab_size:.1f}mm")
+    
+    def log(self, text: str) -> None:
+        """Log text to file if SCHROFF_LOG environment variable is set"""
         if 'SCHROFF_LOG' in os.environ:
-            f = open(os.environ.get('SCHROFF_LOG'), 'a')
-            f.write(text + "\n")
+            with open(os.environ.get('SCHROFF_LOG'), 'a') as f:
+                f.write(text + "\n")
 
     def get_line_path(self, XYstring):
         """Return path data for a line"""
@@ -285,9 +370,18 @@ class BoxMakerCore:
 
         self.paths.append(self.get_line_path(s))
         return s
-
-    def generate_box(self):
-        """Main function to generate the box geometry"""
+        
+    def generate_box(self) -> None:
+        """Main function to generate the box geometry
+        
+        Raises:
+            DimensionError: If box dimensions are invalid
+            MaterialError: If material thickness is invalid
+            TabError: If tab configuration is invalid
+        """
+        # Validate input parameters first
+        self._validate_dimensions()
+        
         # Clear previous paths
         self.paths = []
         self.circles = []
@@ -299,7 +393,7 @@ class BoxMakerCore:
         self.dimpleHeight = self.dimpleheight
         self.dimpleLength = self.dimplelength
         self.halfkerf = self.kerf / 2
-        self.dogbone = 1 if self.tabtype == 1 else 0
+        self.dogbone = 1 if self.tabtype == TabType.CNC else 0
         self.divx = self.div_l
         self.divy = self.div_w
         self.keydivwalls = 0 if self.keydiv == 3 or self.keydiv == 1 else 1
@@ -319,20 +413,7 @@ class BoxMakerCore:
         if self.inside:  # if inside dimension selected correct values to outside dimension
             X += self.thickness * 2
             Y += self.thickness * 2
-            Z += self.thickness * 2
-
-        # Input validation
-        error = 0
-        if min(X, Y, Z) == 0:
-            raise ValueError('Error: Dimensions must be non zero')
-        if min(X, Y, Z) < 3 * self.nomTab:
-            raise ValueError('Error: Tab size too large')
-        if self.nomTab < self.thickness:
-            raise ValueError('Error: Tab size too small')
-        if self.thickness == 0:
-            raise ValueError('Error: Thickness is zero')
-        if self.thickness > min(X, Y, Z) / 3:
-            raise ValueError('Error: Material too thick')
+            Z += self.thickness * 2        # Note: Validation is now handled by _validate_dimensions()
         if self.kerf > min(X, Y, Z) / 3:
             raise ValueError('Error: Kerf too large')
         if self.spacing < self.kerf:

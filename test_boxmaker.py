@@ -13,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from boxmaker_core import BoxMakerCore
+from boxmaker_exceptions import DimensionError, TabError, MaterialError
 
 
 def test_basic_box():
@@ -182,33 +183,33 @@ def test_error_conditions():
     """Test error handling"""
     print("Testing error conditions...")
     
-    core = BoxMakerCore()
-    
     # Test zero dimensions
+    core = BoxMakerCore()
     try:
         core.set_parameters(length=0, width=100, height=50)
         core.generate_box()
         print("✗ Should have raised error for zero dimensions")
         return False
-    except ValueError:
+    except DimensionError:
         print("✓ Correctly handled zero dimensions")
-    
-    # Test tab too large
+      # Test tab too large (physical constraint - larger than dimension/3)
+    core = BoxMakerCore()
     try:
-        core.set_parameters(length=100, width=100, height=50, tab=50)  # Tab larger than dimension/3
+        # 200x250x100mm box with 80mm tabs (larger than 100mm/3 = 33mm)
+        core.set_parameters(length=200, width=250, height=100, tab=80, thickness=3)
         core.generate_box()
         print("✗ Should have raised error for oversized tab")
         return False
-    except ValueError:
-        print("✓ Correctly handled oversized tab")
-    
-    # Test thickness too large
+    except TabError:
+        print("✓ Correctly handled oversized tab")    # Test thickness too large for dimensions
+    core = BoxMakerCore()
     try:
-        core.set_parameters(length=100, width=100, height=50, thickness=40)  # Thickness > dimension/3
+        # Small 6x6x6cm box with 3.5cm thickness (more than half)
+        core.set_parameters(length=60, width=60, height=60, thickness=35, tab=19)  # 19mm < 20mm (60/3) and > 17.5mm (35*0.5)
         core.generate_box()
         print("✗ Should have raised error for excessive thickness")
         return False
-    except ValueError:
+    except MaterialError:
         print("✓ Correctly handled excessive thickness")
     
     return True
@@ -303,6 +304,77 @@ def test_save_test_files():
         return False
 
 
+def test_realistic_compartment_box():
+    """Test realistic compartment box (20x25x10cm with 3 dividers)"""
+    print("Testing realistic compartment box...")
+    
+    core = BoxMakerCore()
+    # Your example: 200x250x100mm box with 3mm material, 12mm tabs, 3 compartments
+    core.set_parameters(
+        length=200, width=250, height=100,
+        thickness=3, kerf=0.1, tab=12,
+        div_l=3  # 3 compartments in length direction
+    )
+    
+    try:
+        core.generate_box()
+        print("✓ Realistic compartment box test passed")
+        return True
+    except Exception as e:
+        print(f"✗ Realistic compartment box test failed: {e}")
+        return False
+
+
+def test_thin_tabs():
+    """Test tabs thinner than material thickness (allowed but weak)"""
+    print("Testing thin tabs (weaker but allowed)...")
+    
+    core = BoxMakerCore()
+    # 6mm thickness with 4mm tabs (2/3 ratio) - should work but be weak
+    core.set_parameters(length=200, width=250, height=100, thickness=6, tab=4, div_l=3)
+    
+    try:
+        core.generate_box()
+        svg_content = core.generate_svg()
+        
+        # Should generate valid SVG
+        if '<svg' in svg_content and '</svg>' in svg_content:
+            print("✓ Thin tabs test passed (tabs allowed but may be weak)")
+            return True
+        else:
+            print("✗ Failed to generate valid SVG for thin tabs")
+            return False
+    except Exception as e:
+        print(f"✗ Unexpected error with thin tabs: {e}")
+        return False
+
+
+def test_large_box_big_tabs():
+    """Test large box with proportionally large tabs"""
+    print("Testing large box with big tabs...")
+    
+    core = BoxMakerCore()
+    # Large 60x40x30cm box with 6mm material and 60mm tabs (10x thickness)
+    core.set_parameters(
+        length=600, width=400, height=300,
+        thickness=6, tab=60  # 60mm tabs (10x thickness) - should work for large box
+    )
+    
+    try:
+        core.generate_box()
+        svg_content = core.generate_svg()
+        
+        if '<svg' in svg_content and '</svg>' in svg_content:
+            print("✓ Large box with big tabs test passed")
+            return True
+        else:
+            print("✗ Failed to generate valid SVG for large box")
+            return False
+    except Exception as e:
+        print(f"✗ Large box test failed: {e}")
+        return False
+
+
 def run_all_tests():
     """Run all tests"""
     print("Running BoxMaker tests...\n")
@@ -315,7 +387,10 @@ def run_all_tests():
         test_svg_generation,
         test_error_conditions,
         test_box_layouts,
-        test_save_test_files
+        test_save_test_files,
+        test_realistic_compartment_box,
+        test_thin_tabs,
+        test_large_box_big_tabs
     ]
     
     passed = 0
