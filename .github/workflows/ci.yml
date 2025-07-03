@@ -1,0 +1,118 @@
+name: CI - Test and Validate BoxMaker
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  test:
+    name: Test BoxMaker Functionality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'  # Latest Python version
+        
+    - name: Create test directories
+      run: |
+        mkdir -p test_results
+        mkdir -p test_assets
+        
+    - name: Run test suite
+      run: |
+        echo "🧪 Running BoxMaker test suite..."
+        python test_boxmaker.py
+        
+    - name: Run CLI examples
+      run: |
+        echo "🚀 Running CLI examples..."
+        python cli_examples.py
+        
+    - name: Test basic CLI functionality
+      run: |
+        echo "🔧 Testing basic CLI functionality..."
+        python boxmaker.py --length 100 --width 80 --height 50 --thickness 3 --tab 12 --output test_ci.svg
+        if [ -f "test_ci.svg" ]; then
+          echo "✓ CLI generated SVG successfully"
+        else
+          echo "❌ CLI failed to generate SVG"
+          exit 1
+        fi
+        
+    - name: Archive test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          test_results/
+          test_assets/
+          test_ci.svg
+        retention-days: 30
+
+  test-inkscape-version:
+    name: Test with Inkscape Python Version
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python (Inkscape version)
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'  # Common Inkscape Python version
+        
+    - name: Create test directories
+      run: |
+        mkdir -p test_results
+        mkdir -p test_assets
+        
+    - name: Run test suite
+      run: |
+        echo "🧪 Running BoxMaker test suite with Python 3.11..."
+        python test_boxmaker.py
+        
+    - name: Run CLI examples
+      run: |
+        echo "🚀 Running CLI examples with Python 3.11..."
+        python cli_examples.py
+
+  cross-platform:
+    name: Cross-Platform Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Create test directories
+      run: |
+        mkdir -p test_results
+        mkdir -p test_assets
+        
+    - name: Run basic test
+      run: |
+        echo "🧪 Running basic test on ${{ matrix.os }}..."
+        python test_boxmaker.py
+        
+    - name: Test CLI
+      run: |
+        echo "🔧 Testing CLI on ${{ matrix.os }}..."
+        python boxmaker.py --length 150 --width 120 --height 80 --thickness 6 --tab 18 --output platform_test.svg

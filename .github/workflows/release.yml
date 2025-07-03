@@ -1,0 +1,88 @@
+name: Release Validation
+
+on:
+  release:
+    types: [published, created]
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  validate-release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Create directories
+      run: |
+        mkdir -p test_results
+        mkdir -p test_assets
+        mkdir -p release_validation
+        
+    - name: Run comprehensive tests
+      run: |
+        echo "🚀 Running release validation tests..."
+        python test_boxmaker.py
+        
+    - name: Generate release examples
+      run: |
+        echo "📦 Generating release examples..."
+        python cli_examples.py
+        
+    - name: Generate additional showcase examples
+      run: |
+        echo "✨ Generating showcase examples..."
+        
+        # Small precision box
+        python boxmaker.py --length 80 --width 60 --height 40 --thickness 3 --tab 9 --kerf 0.1 --output release_validation/precision_small_box.svg
+        
+        # Medium workshop box
+        python boxmaker.py --length 250 --width 200 --height 150 --thickness 6 --tab 20 --div-l 3 --div-w 2 --output release_validation/workshop_organizer.svg
+        
+        # Large storage box
+        python boxmaker.py --length 500 --width 400 --height 300 --thickness 9 --tab 30 --div-l 2 --output release_validation/large_storage.svg
+        
+        echo "✓ Showcase examples generated successfully"
+        
+    - name: Validate all generated files
+      run: |
+        echo "🔍 Validating generated SVG files..."
+        
+        # Count generated files
+        test_count=$(find test_results -name "*.svg" | wc -l)
+        example_count=$(find test_assets -name "*.svg" | wc -l)
+        showcase_count=$(find release_validation -name "*.svg" | wc -l)
+        
+        echo "Found $test_count test files, $example_count example files, $showcase_count showcase files"
+        
+        # Validate SVG structure
+        for file in test_results/*.svg test_assets/*.svg release_validation/*.svg; do
+          if [ -f "$file" ]; then
+            if grep -q "<svg" "$file" && grep -q "</svg>" "$file"; then
+              echo "✓ $file: Valid SVG structure"
+            else
+              echo "❌ $file: Invalid SVG structure"
+              exit 1
+            fi
+          fi
+        done
+        
+        echo "✅ All SVG files validated successfully"
+        
+    - name: Archive release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-validation-artifacts
+        path: |
+          test_results/
+          test_assets/
+          release_validation/
+        retention-days: 90

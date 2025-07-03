@@ -1,0 +1,35 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Test and build artifacts
+test_results/*
+stress_test_results/*
+release_validation/*
+*.svg
+!test_assets/*.svg  # Keep example SVGs in test_assets
+
+# CI temporary files
+test_ci.svg
+platform_test.svg
+test_fail.svg
+release_summary.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Virtual environments
+venv/
+env/
+.env
