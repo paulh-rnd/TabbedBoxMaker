@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+	<_name>CNC Cardboard Box Maker</_name>
+	<id>com.bradgoodman.cardboardboxmaker</id>
+
+	<hbox>
+		<vbox>
+			<label>Dimensions</label>
+			<separator/>
+			<param name="unit" _gui-text="    Units" type="optiongroup" appearance="combo">
+				<option value="in">in</option>
+				<option value="mm">mm</option>
+				<option value="cm">cm</option>
+			</param>
+
+			<param name="height" type="float" precision="3" min="0.0" max="10000.0" _gui-text="    Height">3</param>
+			<param name="width" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Width">4</param>
+			<param name="depth" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Depth">5</param>
+
+			<spacer/>
+			<label>Tabs</label>
+			<separator/>
+		</vbox>
+		<spacer/>
+		<separator/>
+		<spacer/>
+		<vbox>
+			<label>Line and kerf</label>
+			<separator/>
+			<param name="hairline" type="optiongroup" _gui-text="    Line Thickness" appearance="combo">
+				<_option value="0">Default</_option>
+				<_option value="1">Hairline (0.002" for Epilog)</_option>
+			</param>
+
+			<param name="thickness" type="float" precision="3" min="0.0" max="10000.0" _gui-text="    Material Thickness">0.125</param>
+			<param name="kerf" type="float" precision="3"  min="0.0" max="10000.0" _gui-text="    Kerf (cut width)">0.015</param>
+
+			<spacer/>
+			<label>Layout</label>
+			<separator/>
+
+			<param name="boxtop" _gui-text="    Box Top" type="optiongroup" appearance="combo">
+				<option value="1">None</option>
+				<option value="2">Flat Top w/ Sidefolds</option>
+				<option value="5">Locking Top w/ Sidefolds</option>
+				<option value="3">Standard Fold</option>
+				<option value="4">Locking Fold</option>
+			</param>
+			<param name="boxbottom" _gui-text="    Box Bottom" type="optiongroup" appearance="combo">
+				<option value="1">None</option>
+				<option value="2">Flat Bottom w/ Sidefolds</option>
+				<option value="3">Standard Fold</option>
+				<option value="4">Locking Fold</option>
+			</param>
+
+			<param name="sidetab" type="bool"  _gui-text="Side Tab"></param>
+			<param name="foldlines" type="bool"  _gui-text="Add Fold Lines"></param>
+
+		</vbox>
+	</hbox> 
+	<effect>
+		<object-type>all</object-type>
+		<effects-menu>
+			<submenu _name="CNC Tools" />
+		</effects-menu>
+	</effect>
+	<script>
+		<command location="inx" interpreter="python">cardboardboxmaker.py</command>
+	</script>
+</inkscape-extension>
